@@ -1,0 +1,20 @@
+import { Router } from 'express';
+import { getTestById, submitTest, getAvailableTests, getAttempts, getAttemptDetails, getLeaderboard } from '../controllers/studentController.js';
+import { authenticate } from '../middleware/authMiddleware.js';
+
+const router = Router();
+
+router.use(authenticate);
+
+router.get('/tests', getAvailableTests);
+router.get('/test/:id', getTestById);
+router.post('/submit', submitTest);
+router.get('/attempts', getAttempts);
+router.get('/attempt/:id', getAttemptDetails);
+router.get('/leaderboard/:testId', getLeaderboard);
+
+// AI Explanation
+import { handleExplainQuestion } from '../controllers/aiController.js';
+router.post('/ai/explain', handleExplainQuestion);
+
+export default router;
