@@ -3,15 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { 
-  BarChart3, TrendingUp, Target, Award, Clock, 
-  AlertCircle, CheckCircle2, Zap, Brain, ChevronRight,
-  TrendingDown, Sparkles
+  TrendingUp, Target, Award, Zap, Brain, ChevronRight, Sparkles
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell, PieChart, Pie, AreaChart, Area,
+  Bar, Cell, PieChart, Pie, AreaChart, Area,
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 

@@ -5,14 +5,13 @@ import {
   BookOpen, 
   BarChart3, 
   Trophy, 
-  Settings, 
   LogOut,
   ChevronRight,
   User,
   ShieldCheck
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import { motion } from 'framer-motion';
+// import { motion } from 'framer-motion';
 
 const Sidebar = () => {
   const { user, logout } = useAuthStore();
@@ -66,7 +65,7 @@ const Sidebar = () => {
         border: '1px solid rgba(255,255,255,0.05)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyCenter: 'center', color: 'white' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
             <User size={20} style={{ margin: 'auto' }} />
           </div>
           <div style={{ overflow: 'hidden' }}>
