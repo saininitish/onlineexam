@@ -168,7 +168,7 @@ const AdminDashboard: React.FC = () => {
   // Add/Edit Question Modal
   const [isQuestionOpen, setIsQuestionOpen] = useState(false);
   const [questionForm, setQuestionForm] = useState({
-    id: '', question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a',
+    id: '', question: '', question_hi: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a',
     topic: '', difficulty: 'Medium', chapter: ''
   });
   const [savingQuestion, setSavingQuestion] = useState(false);
@@ -261,7 +261,7 @@ const AdminDashboard: React.FC = () => {
     try {
       const payload = {
         ...questionForm,
-        question: serializeQuestion(questionForm.question, questionForm.topic, questionForm.difficulty, questionForm.chapter)
+        question: serializeQuestion(questionForm.question, questionForm.topic, questionForm.difficulty, questionForm.chapter, questionForm.question_hi)
       };
       if (questionForm.id) {
         await api.put(`/admin/questions/${questionForm.id}`, payload);
@@ -270,7 +270,7 @@ const AdminDashboard: React.FC = () => {
         await api.post('/admin/questions', { ...payload, test_id: selectedTest.id });
         setSuccessMsg('Question added!');
       }
-      setQuestionForm({ id: '', question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a', topic: '', difficulty: 'Medium', chapter: '' });
+      setQuestionForm({ id: '', question: '', question_hi: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a', topic: '', difficulty: 'Medium', chapter: '' });
       setIsQuestionOpen(false);
       fetchQuestions(selectedTest.id);
       setTimeout(() => setSuccessMsg(''), 3000);
@@ -457,6 +457,7 @@ const AdminDashboard: React.FC = () => {
     setQuestionForm({
       id: q.id,
       question: meta.text,
+      question_hi: meta.text_hi || '',
       option_a: q.option_a,
       option_b: q.option_b,
       option_c: q.option_c,
@@ -660,10 +661,10 @@ const AdminDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setQuestionForm({
-                      id: '', question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a',
-                      topic: '', difficulty: 'Medium', chapter: ''
-                    });
+                      setQuestionForm({
+                        id: '', question: '', question_hi: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a',
+                        topic: '', difficulty: 'Medium', chapter: ''
+                      });
                     setIsQuestionOpen(true);
                   }}
                   style={{ background: 'var(--success)', color: 'white', padding: '0.5rem 1rem', borderRadius: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', border: 'none', cursor: 'pointer' }}
@@ -702,7 +703,14 @@ const AdminDashboard: React.FC = () => {
                             {meta.difficulty && <span style={{ background: 'var(--glass)', color: meta.difficulty === 'Hard' ? 'var(--danger)' : meta.difficulty === 'Medium' ? 'var(--secondary)' : 'var(--success)', border: '1px solid var(--glass-border)', padding: '0.1rem 0.5rem', borderRadius: '5px', fontSize: '0.65rem' }}>{meta.difficulty}</span>}
                             {meta.chapter && <span style={{ background: 'var(--glass)', color: 'var(--text-muted)', border: '1px solid var(--glass-border)', padding: '0.1rem 0.5rem', borderRadius: '5px', fontSize: '0.65rem' }}>Ch: {meta.chapter}</span>}
                           </div>
-                          <p style={{ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.5 }}>{meta.text}</p>
+                          <p style={{ fontWeight: 600, fontSize: '0.95rem', lineHeight: 1.5 }}>
+                            {meta.text}
+                            {meta.text_hi && (
+                              <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.25rem', fontStyle: 'italic' }}>
+                                हिंदी: {meta.text_hi}
+                              </span>
+                            )}
+                          </p>
                         </div>
                         <div style={{ display: 'flex', gap: '0.3rem' }}>
                           <button onClick={() => openEditQuestion(q)} style={{ color: 'var(--primary)', background: 'transparent' }}><Edit3 size={14} /></button>
@@ -826,7 +834,10 @@ const AdminDashboard: React.FC = () => {
               <button onClick={() => setIsQuestionOpen(false)} style={{ position: 'absolute', right: '1.5rem', top: '1.5rem', color: 'var(--text-muted)' }}><X size={24} /></button>
               <h2 style={{ marginBottom: '1.5rem' }}>{questionForm.id ? 'Edit Question' : 'Add Question'}</h2>
               <form onSubmit={handleSaveQuestion} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <textarea required value={questionForm.question} onChange={e => setQuestionForm({ ...questionForm, question: e.target.value })} rows={3} style={inputStyle} placeholder="Question text..." />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <textarea required value={questionForm.question} onChange={e => setQuestionForm({ ...questionForm, question: e.target.value })} rows={3} style={inputStyle} placeholder="Question (English)..." />
+                  <textarea value={questionForm.question_hi} onChange={e => setQuestionForm({ ...questionForm, question_hi: e.target.value })} rows={3} style={inputStyle} placeholder="सवाल (हिंदी) - Optional" />
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   {['a', 'b', 'c', 'd'].map(opt => (
                     <input key={opt} type="text" required value={(questionForm as any)[`option_${opt}`]} onChange={e => setQuestionForm({ ...questionForm, [`option_${opt}`]: e.target.value })} style={inputStyle} placeholder={`Option ${opt.toUpperCase()}`} />

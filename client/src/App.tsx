@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import { useAuthStore } from './store/authStore';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -18,8 +19,15 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <Navbar />
-      <main className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
+      {user && <Sidebar />}
+      {!user && <Navbar />}
+      <main style={{ 
+        marginLeft: user ? '260px' : '0', 
+        padding: '2rem', 
+        minHeight: '100vh',
+        transition: 'margin 0.3s ease',
+        width: user ? 'calc(100% - 260px)' : '100%'
+      }}>
         <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading page...</div>}>
           <Routes>
             <Route path="/" element={<Home />} />

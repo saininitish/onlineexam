@@ -2,319 +2,337 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { BarChart3, TrendingUp, Users, Target, Award, Clock } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { 
+  BarChart3, TrendingUp, Target, Award, Clock, 
+  AlertCircle, CheckCircle2, Zap, Brain, ChevronRight,
+  TrendingDown, Sparkles
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Chart Components
-const PerformanceChart = ({ data, title }: { data: any[], title: string }) => {
-  const maxValue = Math.max(...data.map(d => d.value || 0));
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Cell, PieChart, Pie, AreaChart, Area,
+  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+} from 'recharts';
 
-  return (
-    <div className="glass p-6">
-      <h3 className="text-lg font-semibold mb-4 text-white">{title}</h3>
-      <div className="space-y-3">
-        {data.map((item, index) => (
-          <motion.div
-            key={item.label}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="flex items-center justify-between"
-          >
-            <span className="text-sm text-gray-300 truncate flex-1 mr-4">{item.label}</span>
-            <div className="flex items-center gap-3 flex-1">
-              <div className="flex-1 bg-gray-700 rounded-full h-2">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(item.value / maxValue) * 100}%` }}
-                  transition={{ delay: index * 0.1 + 0.2, duration: 0.8 }}
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
-                />
-              </div>
-              <span className="text-sm font-medium text-white min-w-[3rem] text-right">
-                {item.value}
-              </span>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const LeaderboardTable = ({ data, title }: { data: any[], title: string }) => (
-  <div className="glass p-6">
-    <h3 className="text-lg font-semibold mb-4 text-white flex items-center gap-2">
-      <Award className="w-5 h-5 text-yellow-400" />
-      {title}
+const XPGrowthChart = ({ data }: { data: any[] }) => (
+  <div className="glass p-6 h-[300px]">
+    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+      <Zap size={20} className="text-yellow-500" /> XP Growth Trend
     </h3>
-    <div className="space-y-2">
-      {data.slice(0, 10).map((student, index) => (
-        <motion.div
-          key={student.student_id}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}
-          className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-              index === 0 ? 'bg-yellow-500 text-black' :
-              index === 1 ? 'bg-gray-400 text-black' :
-              index === 2 ? 'bg-orange-600 text-white' :
-              'bg-gray-600 text-white'
-            }`}>
-              {index + 1}
-            </div>
-            <div>
-              <p className="font-medium text-white">{student.student_name}</p>
-              <p className="text-xs text-gray-400">{student.avg_score?.toFixed(1)} avg score</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-medium text-white">{student.total_attempts} attempts</p>
-            <p className="text-xs text-green-400">{student.accuracy_percentage?.toFixed(1)}% accuracy</p>
-          </div>
-        </motion.div>
-      ))}
-    </div>
+    <ResponsiveContainer width="100%" height="80%">
+      <AreaChart data={data}>
+        <defs>
+          <linearGradient id="colorXp" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
+            <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+        <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={10} axisLine={false} tickLine={false} />
+        <YAxis stroke="rgba(255,255,255,0.3)" fontSize={10} axisLine={false} tickLine={false} />
+        <Tooltip 
+          contentStyle={{ background: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '8px' }}
+          itemStyle={{ color: 'var(--primary)' }}
+        />
+        <Area type="monotone" dataKey="xp" stroke="var(--primary)" fillOpacity={1} fill="url(#colorXp)" strokeWidth={3} />
+      </AreaChart>
+    </ResponsiveContainer>
   </div>
 );
+
+const SubjectRadar = ({ data }: { data: any[] }) => (
+  <div className="glass p-6 h-[300px]">
+    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+      <Brain size={20} className="text-purple-500" /> Skill Radar
+    </h3>
+    <ResponsiveContainer width="100%" height="80%">
+      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
+        <PolarGrid stroke="rgba(255,255,255,0.1)" />
+        <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} />
+        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+        <Radar
+          name="Student"
+          dataKey="score"
+          stroke="var(--primary)"
+          fill="var(--primary)"
+          fillOpacity={0.6}
+        />
+      </RadarChart>
+    </ResponsiveContainer>
+  </div>
+);
+
+const PerformanceTrend = ({ data }: { data: any[] }) => (
+  <div className="glass p-6 h-[300px]">
+    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+      <TrendingUp size={20} className="text-primary" /> Performance Trend
+    </h3>
+    <ResponsiveContainer width="100%" height="80%">
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+        <XAxis 
+          dataKey="name" 
+          stroke="rgba(255,255,255,0.5)" 
+          fontSize={10} 
+          tickLine={false} 
+          axisLine={false} 
+        />
+        <YAxis 
+          stroke="rgba(255,255,255,0.5)" 
+          fontSize={10} 
+          tickLine={false} 
+          axisLine={false}
+          domain={[0, 100]}
+        />
+        <Tooltip 
+          contentStyle={{ background: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px' }}
+          itemStyle={{ color: 'var(--primary)' }}
+        />
+        <Line 
+          type="monotone" 
+          dataKey="accuracy" 
+          stroke="var(--primary)" 
+          strokeWidth={3} 
+          dot={{ fill: 'var(--primary)', strokeWidth: 2, r: 4 }} 
+          activeDot={{ r: 6, strokeWidth: 0 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  </div>
+);
+
+const TopicCard = ({ data, index }: { data: any, index: number }) => {
+  const isWeak = data.status === 'Weak';
+  const isStrong = data.status === 'Strong';
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className="glass p-4 border border-white/5 hover:border-primary/20 transition-all"
+    >
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-bold text-white truncate max-w-[150px]">{data.topic}</h3>
+        <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${
+          isWeak ? 'bg-red-500/10 text-red-500' : isStrong ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'
+        }`}>
+          {data.status}
+        </span>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <div className="flex justify-between text-[10px] mb-1">
+            <span className="text-gray-400">Proficiency</span>
+            <span className="text-white font-bold">{data.accuracy}%</span>
+          </div>
+          <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${data.accuracy}%` }}
+              transition={{ duration: 1, delay: 0.5 }}
+              className={`h-full ${isWeak ? 'bg-red-500' : isStrong ? 'bg-green-500' : 'bg-orange-500'}`}
+            />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+          <div>
+            <p className="text-[9px] text-gray-400 uppercase font-bold">Avg Time</p>
+            <p className="text-xs font-bold text-white">{data.avgTime}s</p>
+          </div>
+          <div>
+            <p className="text-[9px] text-gray-400 uppercase font-bold">Topic Score</p>
+            <p className="text-xs font-bold text-white">{data.score}/100</p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2 bg-primary/5 p-2 rounded-lg">
+          <Sparkles size={12} className="text-primary mt-0.5" />
+          <p className="text-[10px] text-gray-300 leading-tight">{data.recommendation}</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 const Analytics: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [topicStats, setTopicStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'performance' | 'leaderboard'>('overview');
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
       return;
     }
-    fetchAnalytics();
+    fetchInsights();
   }, [user, navigate]);
 
-  const fetchAnalytics = async () => {
+  const fetchInsights = async () => {
     try {
-      const { data } = await api.get('/analytics/dashboard');
-      setAnalytics(data);
+      const { data } = await api.get('/analytics/weak-topics');
+      setTopicStats(data.data || []);
     } catch (error) {
-      console.error('Failed to fetch analytics', error);
+      console.error('Failed to fetch insights', error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="glass p-6 animate-pulse">
-                <div className="h-4 bg-gray-600 rounded mb-2"></div>
-                <div className="h-8 bg-gray-600 rounded"></div>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="glass p-6 animate-pulse">
-                <div className="h-6 bg-gray-600 rounded mb-4"></div>
-                <div className="space-y-3">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <div key={j} className="h-4 bg-gray-600 rounded"></div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const weakTopics = topicStats.filter(t => t.status === 'Weak');
+  const strongTopics = topicStats.filter(t => t.status === 'Strong');
 
-  const summaryCards = [
-    {
-      title: 'Total Students',
-      value: analytics?.summary?.totalStudents || 0,
-      icon: Users,
-      color: 'from-blue-500 to-blue-600'
-    },
-    {
-      title: 'Total Tests',
-      value: analytics?.summary?.totalTests || 0,
-      icon: Target,
-      color: 'from-green-500 to-green-600'
-    },
-    {
-      title: 'Total Attempts',
-      value: analytics?.summary?.totalAttempts || 0,
-      icon: BarChart3,
-      color: 'from-purple-500 to-purple-600'
-    },
-    {
-      title: 'Average Score',
-      value: analytics?.summary?.avgScore?.toFixed(1) || 0,
-      icon: TrendingUp,
-      color: 'from-orange-500 to-orange-600'
-    }
-  ];
+  if (loading) return (
+    <div className="min-h-screen p-8 flex flex-col items-center justify-center gap-4">
+      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <p className="text-gray-400 font-medium animate-pulse">Analyzing your performance...</p>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-bold text-white mb-2">Analytics Dashboard</h1>
-          <p className="text-gray-400">Comprehensive insights into student performance and test analytics</p>
-        </motion.div>
+    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
+      {/* Header with Breadcrumbs */}
+      <div className="flex flex-col gap-1">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-black">Performance Report</p>
+        <h1 className="text-4xl font-black text-white tracking-tight">Student Analytics</h1>
+      </div>
 
-        {/* Summary Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-        >
-          {summaryCards.map((card, index) => (
-            <motion.div
-              key={card.title}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 + 0.2 }}
-              whileHover={{ scale: 1.05 }}
-              className="glass p-6 cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">{card.title}</p>
-                  <p className="text-2xl font-bold text-white">{card.value}</p>
-                </div>
-                <div className={`p-3 rounded-lg bg-gradient-to-br ${card.color}`}>
-                  <card.icon className="w-6 h-6 text-white" />
-                </div>
+      {/* Professional Metric Tiles */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: 'Global Rank', value: '#124', sub: 'Top 5%', icon: Award, color: '#f59e0b' },
+          { label: 'Avg Accuracy', value: '78.4%', sub: '+2.1% from last', icon: Target, color: '#10b981' },
+          { label: 'Total XP', value: '12,450', sub: 'Level 14', icon: Zap, color: '#6366f1' },
+          { label: 'Current Streak', value: '12 Days', sub: 'Personal Record', icon: Sparkles, color: '#ec4899' },
+        ].map((tile, i) => (
+          <motion.div
+            key={tile.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="glass p-6 relative overflow-hidden"
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <tile.icon size={20} style={{ color: tile.color }} />
               </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Tab Navigation */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="flex gap-2 mb-6"
-        >
-          {[
-            { id: 'overview', label: 'Overview', icon: BarChart3 },
-            { id: 'performance', label: 'Performance', icon: TrendingUp },
-            { id: 'leaderboard', label: 'Leaderboard', icon: Award }
-          ].map((tab) => (
-            <motion.button
-              key={tab.id}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-                activeTab === tab.id
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'glass text-gray-300 hover:text-white'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </motion.button>
-          ))}
-        </motion.div>
-
-        {/* Tab Content */}
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3 }}
-        >
-          {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <LeaderboardTable
-                data={analytics?.globalLeaderboard || []}
-                title="Global Leaderboard"
-              />
-              <PerformanceChart
-                data={(analytics?.testAnalytics || []).map((test: any) => ({
-                  label: test.test_title,
-                  value: test.avg_score
-                }))}
-                title="Test Performance"
-              />
             </div>
-          )}
-
-          {activeTab === 'performance' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <PerformanceChart
-                data={(analytics?.studentOverview || []).slice(0, 10).map((student: any) => ({
-                  label: student.student_name,
-                  value: student.avg_score
-                }))}
-                title="Student Performance"
-              />
-              <PerformanceChart
-                data={(analytics?.engagementMetrics || []).slice(0, 10).map((student: any) => ({
-                  label: student.student_name,
-                  value: student.total_attempts
-                }))}
-                title="Student Engagement"
-              />
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{tile.label}</p>
+            <div className="flex items-baseline gap-2 mt-1">
+              <h3 className="text-2xl font-black text-white">{tile.value}</h3>
+              <span className="text-[10px] font-bold text-green-400">{tile.sub}</span>
             </div>
-          )}
+            <div className="absolute top-0 right-0 p-4 opacity-5">
+              <tile.icon size={80} />
+            </div>
+          </motion.div>
+        ))}
+      </div>
 
-          {activeTab === 'leaderboard' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <LeaderboardTable
-                data={analytics?.globalLeaderboard || []}
-                title="Global Leaderboard"
-              />
-              <div className="glass p-6">
-                <h3 className="text-lg font-semibold mb-4 text-white flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-blue-400" />
-                  Recent Activity
-                </h3>
-                <div className="space-y-3">
-                  {(analytics?.engagementMetrics || [])
-                    .filter((student: any) => student.engagement_status === 'Active')
-                    .slice(0, 5)
-                    .map((student: any, index: number) => (
-                    <motion.div
-                      key={student.student_id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/20"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                        <span className="text-white font-medium">{student.student_name}</span>
-                      </div>
-                      <span className="text-green-400 text-sm">Active</span>
-                    </motion.div>
-                  ))}
+      {/* Performance & Growth Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+          <PerformanceTrend data={[
+            { name: 'Mon', accuracy: 65 },
+            { name: 'Tue', accuracy: 72 },
+            { name: 'Wed', accuracy: 68 },
+            { name: 'Thu', accuracy: 85 },
+            { name: 'Fri', accuracy: 82 },
+          ]} />
+        </motion.div>
+        
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+          <XPGrowthChart data={[
+            { name: 'Day 1', xp: 400 },
+            { name: 'Day 2', xp: 1200 },
+            { name: 'Day 3', xp: 2100 },
+            { name: 'Day 4', xp: 3400 },
+            { name: 'Day 5', xp: 4800 },
+          ]} />
+        </motion.div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1">
+          <SubjectRadar data={[
+            { subject: 'Math', score: 85 },
+            { subject: 'Science', score: 65 },
+            { subject: 'English', score: 90 },
+            { subject: 'History', score: 45 },
+            { subject: 'Civics', score: 70 },
+          ]} />
+        </div>
+
+        {/* AI Strategy / Global Level Section (previously in the side) */}
+        <div className="lg:col-span-2 space-y-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass p-6 h-full border-l-8 border-primary/50"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-primary/20 rounded-xl">
+                <Sparkles className="text-primary" size={24} />
+              </div>
+              <h2 className="text-xl font-bold text-white">Advanced Growth Strategy</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <p className="text-sm font-bold text-primary mb-1 flex items-center gap-2">
+                    <Zap size={14} /> Power Move
+                  </p>
+                  <p className="text-xs text-gray-300 leading-relaxed">
+                    Your <b>Consistency</b> is your biggest strength. If you maintain your 12-day streak for another week, 
+                    you are predicted to reach <b>Level 18</b>.
+                  </p>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full py-4 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                >
+                  Continue Growth Path <ChevronRight size={18} />
+                </motion.button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="glass p-4 text-center flex flex-col justify-center">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Growth Rate</p>
+                  <p className="text-2xl font-black text-green-400">+18%</p>
+                  <p className="text-[9px] text-gray-500">vs last week</p>
+                </div>
+                <div className="glass p-4 text-center flex flex-col justify-center">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Peer Rank</p>
+                  <p className="text-2xl font-black text-primary">Top 2%</p>
+                  <p className="text-[9px] text-gray-500">Global</p>
                 </div>
               </div>
             </div>
-          )}
-        </motion.div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Full Topic Breakdown */}
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+          <Target className="text-accent" size={28} />
+          Topic-wise Breakdown
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {topicStats.map((topic, i) => (
+            <TopicCard key={topic.topic} data={topic} index={i} />
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
-export default Analytics;
+export default Analytics;

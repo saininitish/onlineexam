@@ -5,7 +5,7 @@ export function autoDetectTopic(questionText: string): string {
   if (/(react|component|hook|jsx|props|state|redux)/.test(q)) return 'React';
   if (/(node|express|api|backend|server|http|rest)/.test(q)) return 'Backend';
   if (/(java|python|c\+\+|c#|variable|loop|array|function|class|object|string|integer|boolean)/.test(q)) return 'Programming Fundamentals';
-  if (/(math|calculate|sum|multiply|divide|equation|\+|\-|\*)/.test(q)) return 'Mathematics';
+  if (/(math|calculate|sum|multiply|divide|equation|\+|-|\*)/.test(q)) return 'Mathematics';
   if (/(capital|country|city|president|river|mountain|history|war)/.test(q)) return 'General Knowledge';
   if (/(physics|chemistry|biology|science|atom|cell|energy|force)/.test(q)) return 'Science';
   return 'General';

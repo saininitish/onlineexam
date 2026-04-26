@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, History, Clock, FileText, ChevronRight, Trophy, BarChart3, X, CheckCircle2, XCircle, MinusCircle, RotateCcw, Award } from 'lucide-react';
+import { Play, History, Clock, FileText, ChevronRight, Trophy, BarChart3, X, CheckCircle2, XCircle, MinusCircle, RotateCcw, Award, Zap, Sparkles } from 'lucide-react';
 import api, { getCached } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { SkeletonGrid, SkeletonList } from '../components/Skeleton';
@@ -155,42 +155,74 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-      <style>{`
-        @media (max-width: 900px) {
-          .dashboard-main-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
+    <div className="dashboard-container" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+      {/* SaaS Hero Section */}
       <header>
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}
+          className="glass"
+          style={{ 
+            padding: '2.5rem', 
+            background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.05))',
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem'
+          }}
         >
-          <motion.div
-            whileHover={{ scale: 1.05, rotate: 5 }}
-            style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), rgba(99,102,241,0.8))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 32px rgba(99,102,241,0.3)' }}
-          >
-            <Award size={30} style={{ color: 'white' }} />
-          </motion.div>
-          <div>
-            <motion.h1
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <p className="text-primary" style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '0.5rem' }}>Student Workspace</p>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-0.03em', color: 'white', marginBottom: '0.5rem' }}>
+                Hey, {user?.name.split(' ')[0]}! <span style={{ opacity: 0.5 }}>👋</span>
+              </h1>
+              <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', maxWidth: '500px', lineHeight: 1.6 }}>
+                You've completed <span style={{ color: 'white', fontWeight: 700 }}>{attempts.length} tests</span> so far. Keep pushing your limits!
+              </p>
+            </div>
+            
+            {/* Gamification Stats */}
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              {[
+                { label: 'Streak', value: '12 Days', icon: Sparkles, color: '#ec4899' },
+                { label: 'Total XP', value: '2,450', icon: Zap, color: '#f59e0b' },
+                { label: 'Rank', value: 'Silver III', icon: Trophy, color: '#94a3b8' },
+              ].map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.1 + 0.3 }}
+                  className="glass"
+                  style={{ padding: '1rem 1.5rem', borderRadius: '16px', textAlign: 'center', minWidth: '120px' }}
+                >
+                  <stat.icon size={20} style={{ color: stat.color, marginBottom: '0.5rem' }} />
+                  <p style={{ fontSize: '1.25rem', fontWeight: 800, color: 'white', margin: 0 }}>{stat.value}</p>
+                  <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.25rem' }}>{stat.label}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/analytics')}
+              style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', background: 'var(--primary)', color: 'white', fontWeight: 700, border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
             >
-              Welcome back, {user?.name}!
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              style={{ color: 'var(--text-muted)' }}
+              <BarChart3 size={18} /> View Full Report
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="glass"
+              style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', color: 'white', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}
             >
-              Ready to ace your next exam? Let's track your progress! 📈
-            </motion.p>
+              My Achievements
+            </motion.button>
           </div>
         </motion.div>
       </header>
@@ -203,7 +235,7 @@ const Dashboard: React.FC = () => {
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
             className="glass"
-            style={{ padding: '1.75rem', borderLeft: '4px solid var(--accent)', position: 'relative', overflow: 'hidden' }}
+            style={{ padding: '1.75rem', borderLeft: '4px solid var(--accent)', position: 'relative', overflow: 'hidden', zIndex: 1100 }}
           >
             <motion.div
               initial={{ x: '-100%' }}

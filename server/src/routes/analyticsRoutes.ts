@@ -1,19 +1,19 @@
 import { Router } from 'express';
 import {
-  getStudentPerformanceOverview,
-  getStudentTopicPerformance,
-  getStudentProgressTimeline,
-  getTestPerformanceAnalytics,
-  getTestDifficultyAnalysis,
-  getQuestionDifficultyMetrics,
-  getHardestQuestionsRanking,
-  getGlobalLeaderboard,
-  getTestLeaderboard,
-  getMonthlyLeaderboard,
-  getStudentEngagementMetrics,
-  getTestCompletionRates,
-  getQuestionPerformanceTrends,
-  getAnalyticsDashboard
+    getStudentPerformanceOverview,
+    getStudentTopicPerformance,
+    getStudentProgressTimeline,
+    getTestPerformanceAnalytics,
+    getTestDifficultyAnalysis,
+    getQuestionDifficultyMetrics,
+    getHardestQuestionsRanking,
+    getGlobalLeaderboard,
+    getTestLeaderboard,
+    getMonthlyLeaderboard,
+    getStudentEngagementMetrics,
+    getTestCompletionRates,
+    getQuestionPerformanceTrends,
+    getAnalyticsDashboard
 } from '../controllers/analyticsController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 

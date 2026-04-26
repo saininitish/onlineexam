@@ -205,6 +205,31 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
 
     if (ansError) throw ansError;
 
+    // --- SaaS Gamification Logic ---
+    const xpEarned = Math.max(0, Math.round(score * 1.5));
+    const coinsEarned = Math.floor(correctCount / 2);
+
+    // Update User Stats (XP, Coins, Streaks)
+    const { data: userData } = await supabase.from('users').select('xp, coins, streak, last_test_at').eq('id', userId).single();
+    
+    let newStreak = (userData?.streak || 0);
+    const lastTest = userData?.last_test_at ? new Date(userData.last_test_at) : null;
+    const today = new Date();
+    
+    if (!lastTest || (today.getTime() - lastTest.getTime()) > 86400000 * 2) {
+      newStreak = 1; // Reset if missed a day
+    } else if ((today.getTime() - lastTest.getTime()) > 86400000) {
+      newStreak += 1; // Increment if consecutive day
+    }
+
+    await supabase.from('users').update({
+      xp: (userData?.xp || 0) + xpEarned,
+      coins: (userData?.coins || 0) + coinsEarned,
+      streak: newStreak,
+      last_test_at: today.toISOString()
+    }).eq('id', userId);
+    // --- End SaaS Logic ---
+
     res.status(200).json({
       message: 'Test submitted successfully',
       attempt_id: attempt.id,
@@ -212,7 +237,8 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
       correct: correctCount,
       wrong: wrongCount,
       unanswered: unansweredCount,
-      total: questions.length
+      total: questions.length,
+      rewards: { xp: xpEarned, coins: coinsEarned, streak: newStreak }
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });

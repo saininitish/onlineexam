@@ -16,7 +16,7 @@ const Navbar: React.FC = () => {
     <nav className="glass" style={{ margin: '1rem', padding: '0.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: '1rem', zIndex: 1000 }}>
       <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, fontSize: '1.5rem', color: 'var(--primary)' }}>
         <FileText size={28} />
-        <span>MockMaster</span>
+        <span>Myra Chappy</span>
       </Link>
 
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>

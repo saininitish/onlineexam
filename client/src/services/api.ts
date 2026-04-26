@@ -1,6 +1,6 @@
 import axios, { type AxiosRequestHeaders } from 'axios';
 
-const API_URL = 'https://onlineexam-1-zhkf.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -10,7 +10,7 @@ const api = axios.create({
   timeout: 15000,
 });
 
-const cache = new Map<string, { data: any; expires: number }>();
+const cache = new Map<string, { data: unknown; expires: number }>();
 
 const getAuthToken = () => {
   const token = localStorage.getItem('auth-storage');

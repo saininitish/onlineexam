@@ -21,9 +21,9 @@ const Home: React.FC = () => {
           transition={{ duration: 0.6 }}
           style={{ fontSize: '4rem', marginBottom: '1.5rem', lineHeight: 1.1 }}
         >
-          Master Your Exams with <br />
-          <span style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Confidence
+          Master Your Exams <br />
+          with <span style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Myra Chappy
           </span>
         </motion.h1>
         

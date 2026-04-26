@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, ChevronLeft, ChevronRight, Send, AlertCircle, Sun, Moon, User } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Send, AlertCircle, Sun, Moon, User, Pause, Play } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { getStoredTestUiLang, setStoredTestUiLang, testUiStrings, type TestUiLang } from '../i18n/testUi';
@@ -17,7 +17,7 @@ const TestEngine: React.FC = () => {
     const saved = localStorage.getItem(`test_index_${id}`);
     return saved ? parseInt(saved, 10) : 0;
   });
-  const [answers, setAnswers] = useState<{question_id: string, selected_answer: string}[]>(() => {
+  const [answers, setAnswers] = useState<{ question_id: string, selected_answer: string }[]>(() => {
     const saved = localStorage.getItem(`test_answers_${id}`);
     return saved ? JSON.parse(saved) : [];
   });
@@ -446,10 +446,18 @@ const TestEngine: React.FC = () => {
   const totalQuestions = test.questions.length;
 
   return (
-    <div lang={uiLang === 'hi' ? 'hi' : 'en'} className={isDark ? '' : 'light-theme'} style={{ minHeight: '100vh', paddingBottom: '2rem' }}>
+    <div lang={uiLang === 'hi' ? 'hi' : 'en'} className={`test-engine-container ${isDark ? '' : 'light-theme'}`} style={{ minHeight: '100vh', paddingBottom: '2rem' }}>
       <style>{`
-        body { transition: background-color 0.3s ease; }
-        .light-theme body { background-image: none; background-color: #f1f5f9; }
+        .test-engine-container { background-color: var(--bg-dark); color: var(--text-main); transition: all 0.3s ease; }
+        .test-engine-container.light-theme { 
+          background-color: #f1f5f9; 
+          color: #0f172a; 
+          background-image: none;
+        }
+        .light-theme .glass { background: white; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .light-theme .mixed-lang-text { color: #1e293b; }
+        .light-theme button.glass { background: #e2e8f0; color: #1e293b; }
+        
         @media (max-width: 900px) {
           .test-engine-grid { grid-template-columns: 1fr !important; }
           .test-engine-sidebar { position: static !important; width: 100% !important; }
@@ -465,8 +473,8 @@ const TestEngine: React.FC = () => {
         style={{
           marginBottom: '1.5rem',
           padding: '0.75rem 2rem',
-          display: 'flex',
-          justifyContent: 'space-between',
+          display: 'grid',
+          gridTemplateColumns: '1fr auto 1fr',
           alignItems: 'center',
           position: 'sticky',
           top: 0,
@@ -477,7 +485,8 @@ const TestEngine: React.FC = () => {
           borderRight: 'none',
           background: 'linear-gradient(135deg, var(--glass), rgba(255,255,255,0.02))',
           backdropFilter: 'blur(20px)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          gap: '1rem'
         }}
       >
         <motion.div
@@ -501,12 +510,12 @@ const TestEngine: React.FC = () => {
           >
             <User size={20} style={{ color: 'white' }} />
           </motion.div>
-          <div>
-            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700 }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {useAuthStore.getState().user?.name || 'Student'}
             </p>
             <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-              Exam Portal ID: {useAuthStore.getState().user?.id?.slice(0,8)}
+              Portal ID: {useAuthStore.getState().user?.id?.slice(0, 8)}
             </p>
           </div>
         </motion.div>
@@ -516,19 +525,22 @@ const TestEngine: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
           style={{
-            fontSize: '1.1rem',
+            fontSize: '1rem',
             margin: 0,
-            position: 'absolute',
-            left: '50%',
-            transform: 'translateX(-50%)',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '0.5rem',
             background: 'linear-gradient(135deg, var(--primary), var(--accent))',
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            fontWeight: 800
+            fontWeight: 800,
+            textAlign: 'center',
+            maxWidth: '400px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
           }}
         >
           <motion.span
@@ -545,7 +557,7 @@ const TestEngine: React.FC = () => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
-          style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'flex-end' }}
         >
           <motion.button
             whileHover={{ scale: 1.1, rotate: 180 }}
@@ -566,23 +578,29 @@ const TestEngine: React.FC = () => {
           >
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </motion.button>
+
           <motion.button
-            whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(99,102,241,0.3)' }}
-            whileTap={{ scale: 0.95 }}
-            onClick={requestFullscreenMode}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setIsPaused(!isPaused)}
             style={{
-              padding: '0.5rem 0.75rem',
-              borderRadius: '999px',
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.08))',
-              border: '1px solid rgba(99, 102, 241, 0.4)',
-              color: 'var(--primary)',
-              fontWeight: 700,
+              background: isPaused ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+              color: isPaused ? 'var(--success)' : 'var(--danger)',
+              padding: '0.4rem 0.8rem',
+              borderRadius: '10px',
+              border: `1px solid ${isPaused ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
               cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(99,102,241,0.1)'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontWeight: 700,
+              fontSize: '0.9rem'
             }}
           >
-            Enter Fullscreen
+            {isPaused ? <Play size={16} /> : <Pause size={16} />}
+            {isPaused ? 'Resume' : 'Pause'}
           </motion.button>
+
           <motion.div
             animate={timeLeft < 60 ? { scale: [1, 1.1, 1] } : {}}
             transition={{ duration: 0.5, repeat: timeLeft < 60 ? Infinity : 0 }}
@@ -592,14 +610,14 @@ const TestEngine: React.FC = () => {
               gap: '0.5rem',
               color: timeLeft < 60 ? 'var(--danger)' : 'var(--primary)',
               fontWeight: 800,
-              fontSize: '1.2rem',
+              fontSize: '1.1rem',
               background: timeLeft < 60 ? 'rgba(239,68,68,0.1)' : 'rgba(99,102,241,0.1)',
-              padding: '0.5rem 1rem',
-              borderRadius: '12px',
+              padding: '0.4rem 0.8rem',
+              borderRadius: '10px',
               border: `1px solid ${timeLeft < 60 ? 'rgba(239,68,68,0.3)' : 'rgba(99,102,241,0.3)'}`
             }}
           >
-            <Clock size={20} />
+            <Clock size={18} />
             <span>{formatTime(timeLeft)}</span>
           </motion.div>
         </motion.div>
@@ -824,10 +842,10 @@ const TestEngine: React.FC = () => {
                     marginBottom: '2rem',
                     lineHeight: 1.6,
                     fontWeight: 600,
-                    color: 'var(--text-main)'
+                    color: 'inherit'
                   }}
                 >
-                  {parsedQuestion.text}
+                  {(uiLang === 'hi' && parsedQuestion.text_hi) ? parsedQuestion.text_hi : parsedQuestion.text}
                 </motion.h3>
 
                 <motion.div
@@ -897,7 +915,9 @@ const TestEngine: React.FC = () => {
                           {opt}
                         </motion.span>
                         <span className="mixed-lang-text" dir="auto" style={{ fontSize: '1.05rem', flex: 1 }}>
-                          {optionText}
+                          {optionText.includes('|||')
+                            ? (uiLang === 'hi' ? optionText.split('|||')[1]?.trim() : optionText.split('|||')[0]?.trim())
+                            : optionText}
                         </span>
                         {isSelected && (
                           <motion.div
@@ -1114,7 +1134,7 @@ const TestEngine: React.FC = () => {
 
               let bgColor = 'var(--glass)';
               let borderColor = 'var(--glass-border)';
-              let textColor = 'white';
+              const textColor = 'white';
               let boxShadow = 'none';
 
               if (isCurrent) {
@@ -1142,10 +1162,10 @@ const TestEngine: React.FC = () => {
                     boxShadow: isCurrent
                       ? '0 6px 20px rgba(99,102,241,0.4)'
                       : isMarked
-                      ? '0 6px 20px rgba(236, 72, 153, 0.4)'
-                      : isAnswered
-                      ? '0 6px 20px rgba(16,185,129,0.4)'
-                      : '0 6px 20px rgba(0,0,0,0.2)'
+                        ? '0 6px 20px rgba(236, 72, 153, 0.4)'
+                        : isAnswered
+                          ? '0 6px 20px rgba(16,185,129,0.4)'
+                          : '0 6px 20px rgba(0,0,0,0.2)'
                   }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setCurrentIdx(i)}
