@@ -333,6 +333,7 @@ const TestEngine: React.FC = () => {
     doSubmit();
   };
 
+  /*
   const requestFullscreenMode = async () => {
     try {
       if (document.documentElement.requestFullscreen) {
@@ -345,6 +346,7 @@ const TestEngine: React.FC = () => {
       setCheatWarnings(w => [...w, 'Please allow full-screen mode for best test security.']);
     }
   };
+  */
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);

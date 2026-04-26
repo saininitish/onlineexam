@@ -9,8 +9,7 @@ import { motion } from 'framer-motion';
 
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Bar, Cell, PieChart, Pie, AreaChart, Area,
-  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+  AreaChart, Area, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 
 const XPGrowthChart = ({ data }: { data: any[] }) => (
@@ -181,8 +180,7 @@ const Analytics: React.FC = () => {
     }
   };
 
-  const weakTopics = topicStats.filter(t => t.status === 'Weak');
-  const strongTopics = topicStats.filter(t => t.status === 'Strong');
+  // Topics analysis calculated but simplified for current UI
 
   if (loading) return (
     <div className="min-h-screen p-8 flex flex-col items-center justify-center gap-4">
