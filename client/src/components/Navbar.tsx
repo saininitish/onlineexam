@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { LogOut, LayoutDashboard, FileText } from 'lucide-react';
+import { LogOut, LayoutDashboard, FileText, BarChart3 } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -26,6 +26,12 @@ const Navbar: React.FC = () => {
               <LayoutDashboard size={18} />
               <span>Dashboard</span>
             </Link>
+            {user.role === 'admin' && (
+              <Link to="/analytics" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)' }}>
+                <BarChart3 size={18} />
+                <span>Analytics</span>
+              </Link>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', paddingLeft: '1rem', borderLeft: '1px solid var(--border)' }}>
               <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                 Hi, <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{user.name}</span>

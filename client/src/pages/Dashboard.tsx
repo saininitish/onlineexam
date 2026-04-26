@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Play, History, Clock, FileText, ChevronRight, Trophy, BarChart3, X, CheckCircle2, XCircle, MinusCircle, RotateCcw } from 'lucide-react';
-import api from '../services/api';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, History, Clock, FileText, ChevronRight, Trophy, BarChart3, X, CheckCircle2, XCircle, MinusCircle, RotateCcw, Award } from 'lucide-react';
+import api, { getCached } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import { SkeletonGrid, SkeletonList } from '../components/Skeleton';
 
 const normOpt = (v: string | null | undefined) =>
   v == null || v === '' ? '' : String(v).trim().toLowerCase();
@@ -28,14 +29,20 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [testsRes, attemptsRes] = await Promise.all([
-          api.get('/student/tests'),
-          api.get('/student/attempts')
-        ]);
-        setTests(testsRes.data);
-        setAttempts(attemptsRes.data);
+        const { tests, attempts } = await getCached('/student/dashboard', 120000);
+        setTests(tests);
+        setAttempts(attempts);
       } catch (err) {
-        console.error('Failed to fetch dashboard data', err);
+        try {
+          const [testsRes, attemptsRes] = await Promise.all([
+            api.get('/student/tests'),
+            api.get('/student/attempts')
+          ]);
+          setTests(testsRes.data);
+          setAttempts(attemptsRes.data);
+        } catch (fallbackError) {
+          console.error('Failed to fetch dashboard data', fallbackError);
+        }
       } finally {
         setLoading(false);
       }
@@ -70,10 +77,59 @@ const Dashboard: React.FC = () => {
   }, [location.state, navigate]);
 
   if (loading) return (
-    <div style={{ textAlign: 'center', padding: '4rem' }}>
-      <div style={{ width: '40px', height: '40px', border: '4px solid var(--glass-border)', borderTop: '4px solid var(--primary)', borderRadius: '50%', margin: '0 auto 1rem', animation: 'spin 1s linear infinite' }} />
-      <p style={{ color: 'var(--text-muted)' }}>Loading Dashboard...</p>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); }}`}</style>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+      <header>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}
+        >
+          <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--glass)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Award size={30} style={{ color: 'var(--primary)' }} />
+          </div>
+          <div>
+            <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', background: 'var(--glass)', height: '2.5rem', borderRadius: '8px', width: '300px' }} />
+            <p style={{ color: 'var(--text-muted)', background: 'var(--glass)', height: '1rem', borderRadius: '4px', width: '400px' }} />
+          </div>
+        </motion.div>
+      </header>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(260px, 300px)',
+          gap: '2rem',
+          maxWidth: '960px',
+          margin: '0 auto',
+          width: '100%'
+        }}
+      >
+        <section>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}
+          >
+            <FileText style={{ color: 'var(--primary)' }} size={22} />
+            <h2 style={{ fontSize: '1.35rem' }}>Available Mock Tests</h2>
+          </motion.div>
+          <SkeletonGrid columns={3} rows={2} />
+        </section>
+
+        <section>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}
+          >
+            <History style={{ color: 'var(--secondary)' }} size={24} />
+            <h2 style={{ fontSize: '1.5rem' }}>Recent Attempts</h2>
+          </motion.div>
+          <SkeletonList count={5} />
+        </section>
+      </div>
     </div>
   );
 
@@ -106,68 +162,150 @@ const Dashboard: React.FC = () => {
         }
       `}</style>
       <header>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Student Dashboard</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Welcome back, {user?.name}. Ready to ace your next exam?</p>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}
+        >
+          <motion.div
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), rgba(99,102,241,0.8))', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 32px rgba(99,102,241,0.3)' }}
+          >
+            <Award size={30} style={{ color: 'white' }} />
+          </motion.div>
+          <div>
+            <motion.h1
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}
+            >
+              Welcome back, {user?.name}!
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Ready to ace your next exam? Let's track your progress! 📈
+            </motion.p>
+          </div>
+        </motion.div>
       </header>
 
       {submitSummary && (
-        <motion.section
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass"
-          style={{ padding: '1.75rem', borderLeft: '4px solid var(--accent)' }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <BarChart3 size={26} style={{ color: 'var(--accent)' }} />
-              <div>
-                <h2 style={{ fontSize: '1.2rem', marginBottom: '0.15rem' }}>Test submitted — quick analysis</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{submitSummary.attempt?.tests?.title}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSubmitSummary(null)}
-              aria-label="Dismiss summary"
-              style={{ padding: '0.45rem', borderRadius: '8px', background: 'var(--glass)', border: '1px solid var(--glass-border)', color: 'var(--text-muted)', cursor: 'pointer', lineHeight: 0 }}
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-            <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Score / Max</p>
-              <p style={{ fontSize: '1.5rem', fontWeight: 800, color: sScore >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                {sScore}<span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}> / {sMax}</span>
-              </p>
-            </div>
-            <div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Accuracy</p>
-              <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)' }}>{sAccuracy}%</p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <CheckCircle2 size={18} style={{ color: 'var(--success)' }} />
-              <span style={{ fontWeight: 700, color: 'var(--success)' }}>{sCorrect} sahi</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <XCircle size={18} style={{ color: 'var(--danger)' }} />
-              <span style={{ fontWeight: 700, color: 'var(--danger)' }}>{sWrong} galat</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <MinusCircle size={18} style={{ color: 'var(--text-muted)' }} />
-              <span style={{ fontWeight: 700, color: 'var(--text-muted)' }}>{sSkipped} chhoda</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => navigate(`/result/${submitSummary.attempt?.id}`)}
-            style={{ padding: '0.85rem 1.5rem', borderRadius: '12px', background: 'var(--primary)', color: 'white', fontWeight: 700, fontSize: '0.95rem', border: 'none', cursor: 'pointer' }}
+        <AnimatePresence>
+          <motion.section
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="glass"
+            style={{ padding: '1.75rem', borderLeft: '4px solid var(--accent)', position: 'relative', overflow: 'hidden' }}
           >
-            Poora analysis (question-by-question)
-          </button>
-        </motion.section>
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: '100%' }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '2px',
+                background: 'linear-gradient(90deg, transparent, var(--accent), transparent)',
+                opacity: 0.6
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <BarChart3 size={26} style={{ color: 'var(--accent)' }} />
+                </motion.div>
+                <div>
+                  <h2 style={{ fontSize: '1.2rem', marginBottom: '0.15rem' }}>🎉 Test Completed!</h2>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{submitSummary.attempt?.tests?.title}</p>
+                </div>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+                type="button"
+                onClick={() => setSubmitSummary(null)}
+                aria-label="Dismiss summary"
+                style={{ padding: '0.45rem', borderRadius: '8px', background: 'var(--glass)', border: '1px solid var(--glass-border)', color: 'var(--text-muted)', cursor: 'pointer', lineHeight: 0 }}
+              >
+                <X size={18} />
+              </motion.button>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}
+            >
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                style={{ textAlign: 'center', padding: '1rem', background: 'var(--glass)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}
+              >
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Final Score</p>
+                <p style={{ fontSize: '1.8rem', fontWeight: 800, color: sScore >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                  {sScore}<span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}> / {sMax}</span>
+                </p>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                style={{ textAlign: 'center', padding: '1rem', background: 'var(--glass)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}
+              >
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Accuracy</p>
+                <p style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary)' }}>{sAccuracy}%</p>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                style={{ textAlign: 'center', padding: '1rem', background: 'var(--glass)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}
+              >
+                <CheckCircle2 size={24} style={{ color: 'var(--success)', marginBottom: '0.5rem' }} />
+                <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--success)', margin: 0 }}>{sCorrect}</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Correct</p>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                style={{ textAlign: 'center', padding: '1rem', background: 'var(--glass)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}
+              >
+                <XCircle size={24} style={{ color: 'var(--danger)', marginBottom: '0.5rem' }} />
+                <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--danger)', margin: 0 }}>{sWrong}</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Wrong</p>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                style={{ textAlign: 'center', padding: '1rem', background: 'var(--glass)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}
+              >
+                <MinusCircle size={24} style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }} />
+                <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-muted)', margin: 0 }}>{sSkipped}</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Skipped</p>
+              </motion.div>
+            </motion.div>
+
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+              whileHover={{ scale: 1.02, boxShadow: '0 8px 25px rgba(99,102,241,0.3)' }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={() => navigate(`/result/${submitSummary.attempt?.id}`)}
+              style={{ padding: '0.85rem 1.5rem', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary), rgba(99,102,241,0.8))', color: 'white', fontWeight: 700, fontSize: '0.95rem', border: 'none', cursor: 'pointer', width: '100%', boxShadow: '0 4px 15px rgba(99,102,241,0.2)' }}
+            >
+              📊 View Detailed Analysis
+            </motion.button>
+          </motion.section>
+        </AnimatePresence>
       )}
 
       <div
@@ -183,10 +321,15 @@ const Dashboard: React.FC = () => {
       >
         {/* Available Tests — compact card grid */}
         <section style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1, duration: 0.5 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}
+          >
             <FileText style={{ color: 'var(--primary)' }} size={22} />
             <h2 style={{ fontSize: '1.35rem' }}>Available Mock Tests</h2>
-          </div>
+          </motion.div>
 
           <div
             style={{
@@ -196,14 +339,22 @@ const Dashboard: React.FC = () => {
               maxWidth: '640px'
             }}
           >
-            {tests.length > 0 ? tests.map((test) => {
+            {tests.length > 0 ? tests.map((test, index) => {
               const { count: attemptCount, last: lastAttempt } = getTestAttemptInfo(test.id);
               const triedBefore = attemptCount > 0;
 
               return (
               <motion.div
                 key={test.id}
-                whileHover={{ y: -2 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1, duration: 0.4 }}
+                whileHover={{
+                  y: -8,
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                  scale: 1.02
+                }}
+                whileTap={{ scale: 0.98 }}
                 className="glass"
                 style={{
                   padding: '1rem',
@@ -211,28 +362,63 @@ const Dashboard: React.FC = () => {
                   flexDirection: 'column',
                   gap: '0.75rem',
                   border: '1px solid var(--glass-border)',
-                  borderRadius: '14px'
+                  borderRadius: '14px',
+                  cursor: 'pointer',
+                  background: 'linear-gradient(135deg, var(--glass), rgba(255,255,255,0.02))',
+                  position: 'relative',
+                  overflow: 'hidden'
                 }}
+                onClick={() => navigate(`/test/${test.id}`)}
               >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: index * 0.1 + 0.2, type: 'spring', stiffness: 200 }}
+                  style={{
+                    position: 'absolute',
+                    top: '-20px',
+                    right: '-20px',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    background: triedBefore ? 'rgba(16,185,129,0.2)' : 'rgba(99,102,241,0.2)',
+                    opacity: 0.6
+                  }}
+                />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: triedBefore && lastAttempt ? '0.5rem' : 0 }}>
-                    <h3 style={{ fontSize: '0.95rem', margin: 0, lineHeight: 1.35, fontWeight: 700 }}>{test.title}</h3>
+                    <motion.h3
+                      whileHover={{ color: 'var(--primary)' }}
+                      style={{ fontSize: '0.95rem', margin: 0, lineHeight: 1.35, fontWeight: 700 }}
+                    >
+                      {test.title}
+                    </motion.h3>
                     {triedBefore && (
-                      <span style={{
-                        fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'flex-start',
-                        padding: '0.15rem 0.45rem', borderRadius: '5px',
-                        background: 'rgba(99, 102, 241, 0.2)', color: 'var(--primary)', border: '1px solid rgba(99, 102, 241, 0.35)'
-                      }}>
+                      <motion.span
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: index * 0.1 + 0.3 }}
+                        style={{
+                          fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'flex-start',
+                          padding: '0.15rem 0.45rem', borderRadius: '5px',
+                          background: 'rgba(16,185,129,0.15)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.3)'
+                        }}
+                      >
                         Attempted{attemptCount > 1 ? ` (${attemptCount}×)` : ''}
-                      </span>
+                      </motion.span>
                     )}
                   </div>
                   {triedBefore && lastAttempt && (
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.1 + 0.4 }}
+                      style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}
+                    >
                       Last: <strong style={{ color: 'var(--text-main)' }}>{lastAttempt.score}</strong>
                       {' · '}
                       {new Date(lastAttempt.submitted_at).toLocaleDateString()}
-                    </p>
+                    </motion.p>
                   )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -242,64 +428,172 @@ const Dashboard: React.FC = () => {
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    <button
-                      onClick={() => navigate(`/test/${test.id}`)}
-                      style={{ background: 'var(--primary)', color: 'white', padding: '0.5rem 0.75rem', borderRadius: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontSize: '0.8rem', width: '100%', border: 'none', cursor: 'pointer' }}
+                    <motion.button
+                      whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(99,102,241,0.3)' }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/test/${test.id}`); }}
+                      style={{
+                        background: triedBefore ? 'linear-gradient(135deg, var(--success), rgba(16,185,129,0.8))' : 'linear-gradient(135deg, var(--primary), rgba(99,102,241,0.8))',
+                        color: 'white',
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '8px',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.35rem',
+                        fontSize: '0.8rem',
+                        width: '100%',
+                        border: 'none',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(99,102,241,0.2)'
+                      }}
                     >
                       {triedBefore ? (
                         <><RotateCcw size={14} /> Reattempt</>
                       ) : (
                         <><Play size={14} fill="currentColor" /> Start</>
                       )}
-                    </button>
-                    <button
-                      onClick={() => navigate(`/leaderboard/${test.id}`)}
-                      style={{ background: 'rgba(255,215,0,0.08)', color: '#FFD700', padding: '0.45rem 0.75rem', borderRadius: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontSize: '0.75rem', width: '100%', border: '1px solid rgba(255,215,0,0.2)', cursor: 'pointer' }}
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,215,0,0.15)' }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/leaderboard/${test.id}`); }}
+                      style={{
+                        background: 'rgba(255,215,0,0.08)',
+                        color: '#FFD700',
+                        padding: '0.45rem 0.75rem',
+                        borderRadius: '8px',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.35rem',
+                        fontSize: '0.75rem',
+                        width: '100%',
+                        border: '1px solid rgba(255,215,0,0.2)',
+                        cursor: 'pointer'
+                      }}
                     >
-                      <Trophy size={14} /> Board
-                    </button>
+                      <Trophy size={14} /> Leaderboard
+                    </motion.button>
                   </div>
                 </div>
               </motion.div>
             );
             }) : (
-              <div className="glass" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', gridColumn: '1 / -1', borderRadius: '14px' }}>
-                No tests available at the moment.
-              </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="glass"
+                style={{
+                  padding: '2rem',
+                  textAlign: 'center',
+                  color: 'var(--text-muted)',
+                  fontSize: '0.9rem',
+                  borderRadius: '14px',
+                  gridColumn: '1 / -1',
+                  background: 'linear-gradient(135deg, var(--glass), rgba(255,255,255,0.02))'
+                }}
+              >
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <FileText size={48} style={{ marginBottom: '1rem', opacity: 0.5, color: 'var(--primary)' }} />
+                </motion.div>
+                <p style={{ margin: 0 }}>No tests available at the moment.</p>
+                <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Check back later for new mock tests! 🚀</p>
+              </motion.div>
             )}
           </div>
         </section>
 
         {/* Recent Attempts */}
         <section>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}
+          >
             <History style={{ color: 'var(--secondary)' }} size={24} />
             <h2 style={{ fontSize: '1.5rem' }}>Recent Attempts</h2>
-          </div>
+          </motion.div>
 
-          <div className="glass" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {attempts.length > 0 ? attempts.slice(0, 8).map((attempt) => (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="glass"
+            style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
+          >
+            {attempts.length > 0 ? attempts.slice(0, 8).map((attempt, index) => (
               <motion.div
                 key={attempt.id}
-                whileHover={{ x: 5 }}
-                style={{ paddingBottom: '1rem', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 + 0.4, duration: 0.4 }}
+                whileHover={{ x: 8, backgroundColor: 'rgba(255,255,255,0.02)' }}
+                style={{
+                  paddingBottom: '1rem',
+                  borderBottom: index < Math.min(attempts.length, 8) - 1 ? '1px solid var(--glass-border)' : 'none',
+                  cursor: 'pointer',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  marginBottom: '0.5rem'
+                }}
                 onClick={() => navigate(`/result/${attempt.id}`)}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                  <span style={{ fontWeight: 600 }}>{attempt.tests?.title}</span>
-                  <span style={{ color: attempt.score >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 700, fontSize: '1.1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.3rem' }}>
+                  <motion.span
+                    whileHover={{ color: 'var(--primary)' }}
+                    style={{ fontWeight: 600, flex: 1, marginRight: '1rem' }}
+                  >
+                    {attempt.tests?.title}
+                  </motion.span>
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    style={{
+                      color: attempt.score >= 0 ? 'var(--success)' : 'var(--danger)',
+                      fontWeight: 700,
+                      fontSize: '1.1rem',
+                      background: attempt.score >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '6px',
+                      border: `1px solid ${attempt.score >= 0 ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`
+                    }}
+                  >
                     {attempt.score}
-                  </span>
+                  </motion.div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   <span>{new Date(attempt.submitted_at).toLocaleDateString()} • {Math.floor(attempt.time_taken / 60)}m {attempt.time_taken % 60}s</span>
-                  <span style={{ display: 'flex', alignItems: 'center', color: 'var(--primary)' }}>View <ChevronRight size={14} /></span>
+                  <motion.span
+                    whileHover={{ color: 'var(--primary)' }}
+                    style={{ display: 'flex', alignItems: 'center', color: 'var(--primary)' }}
+                  >
+                    View <ChevronRight size={14} />
+                  </motion.span>
                 </div>
               </motion.div>
             )) : (
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', padding: '1rem' }}>No attempts yet. Start a test to see your results here!</p>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', padding: '2rem' }}
+              >
+                <motion.div
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <History size={48} style={{ marginBottom: '1rem', opacity: 0.5, color: 'var(--secondary)' }} />
+                </motion.div>
+                <p style={{ margin: 0 }}>No attempts yet. Start a test to see your results here!</p>
+                <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Your progress will appear here after your first attempt. 📈</p>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
         </section>
       </div>
     </div>

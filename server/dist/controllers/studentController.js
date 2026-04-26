@@ -4,10 +4,60 @@ export const getAvailableTests = async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('tests')
-            .select('*, users(name)');
+            .select('id, title, duration, marks_per_question, negative_mark, created_by, users(name)')
+            .order('created_at', { ascending: false });
         if (error)
             throw error;
         res.status(200).json(data);
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+export const reportTestHeartbeat = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const { test_id, event, details, current_question, time_left, page_timestamp } = req.body;
+        if (!test_id) {
+            return res.status(400).json({ message: 'test_id is required' });
+        }
+        console.info('[TestHeartbeat]', {
+            userId,
+            test_id,
+            event,
+            details,
+            current_question,
+            time_left,
+            page_timestamp
+        });
+        res.status(200).json({ serverTime: Date.now() });
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+export const getStudentDashboard = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const [testsResult, attemptsResult] = await Promise.all([
+            supabase
+                .from('tests')
+                .select('id, title, duration, marks_per_question, negative_mark')
+                .order('created_at', { ascending: false }),
+            supabase
+                .from('attempts')
+                .select('id, test_id, score, submitted_at')
+                .eq('user_id', userId)
+                .order('submitted_at', { ascending: false })
+        ]);
+        if (testsResult.error)
+            throw testsResult.error;
+        if (attemptsResult.error)
+            throw attemptsResult.error;
+        res.status(200).json({
+            tests: testsResult.data || [],
+            attempts: attemptsResult.data || []
+        });
     }
     catch (error) {
         res.status(500).json({ message: error.message });
@@ -46,19 +96,25 @@ export const submitTest = async (req, res) => {
         if (!Array.isArray(answers)) {
             return res.status(400).json({ message: 'Answers must be an array' });
         }
-        // Get test details for scoring
-        const { data: test } = await supabase
-            .from('tests')
-            .select('marks_per_question, negative_mark')
-            .eq('id', test_id)
-            .single();
-        if (!test)
+        const [testResult, questionsResult] = await Promise.all([
+            supabase
+                .from('tests')
+                .select('marks_per_question, negative_mark')
+                .eq('id', test_id)
+                .single(),
+            supabase
+                .from('questions')
+                .select('id, correct_answer')
+                .eq('test_id', test_id)
+        ]);
+        if (testResult.error || !testResult.data) {
             return res.status(404).json({ message: 'Test not found' });
-        // Get correct answers
-        const { data: questions } = await supabase
-            .from('questions')
-            .select('id, correct_answer')
-            .eq('test_id', test_id);
+        }
+        if (questionsResult.error || !questionsResult.data) {
+            return res.status(500).json({ message: 'Could not fetch questions' });
+        }
+        const test = testResult.data;
+        const questions = questionsResult.data;
         if (!questions)
             return res.status(500).json({ message: 'Could not fetch questions' });
         let score = 0;
