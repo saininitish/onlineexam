@@ -30,14 +30,16 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Cache tests as they don't change often
-        const { tests, stats } = await getCached('/student/dashboard', 120000);
-        setTests(tests);
-        if (stats) setUserStats(stats);
+        // Fetch dashboard data directly to keep stats and tests fresh
+        const [dashRes, attemptsRes] = await Promise.all([
+          api.get('/student/dashboard'),
+          api.get('/student/attempts')
+        ]);
         
-        // Always fetch fresh attempts to keep reattempt/history accurate
-        const attemptsRes = await api.get('/student/attempts');
-        setAttempts(attemptsRes.data);
+        const { tests, stats } = dashRes.data;
+        setTests(tests || []);
+        if (stats) setUserStats(stats);
+        setAttempts(attemptsRes.data || []);
       } catch (err) {
         try {
           const [{ data: dashData }, attemptsRes] = await Promise.all([

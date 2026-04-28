@@ -42,7 +42,7 @@ api.interceptors.response.use(
   }
 );
 
-export const getCached = async (url: string, ttl = 120000, config = {}) => {
+export const getCached = async (url: string, ttl = 30000, config = {}) => {
   const now = Date.now();
   const token = getAuthToken();
   const cacheKey = token ? `${url}_${token.slice(-10)}` : url;
