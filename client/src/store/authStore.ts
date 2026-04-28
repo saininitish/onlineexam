@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { clearApiCache } from '../services/api';
+
 interface User {
   id: string;
   name: string;
@@ -21,7 +23,10 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       setAuth: (user, token) => set({ user, token }),
-      logout: () => set({ user: null, token: null }),
+      logout: () => {
+        clearApiCache();
+        set({ user: null, token: null });
+      },
     }),
     {
       name: 'auth-storage',

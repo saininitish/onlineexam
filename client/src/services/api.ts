@@ -44,7 +44,9 @@ api.interceptors.response.use(
 
 export const getCached = async (url: string, ttl = 120000, config = {}) => {
   const now = Date.now();
-  const cached = cache.get(url);
+  const token = getAuthToken();
+  const cacheKey = token ? `${url}_${token.slice(-10)}` : url;
+  const cached = cache.get(cacheKey);
 
   if (cached && cached.expires > now) {
     return cached.data;
@@ -52,9 +54,11 @@ export const getCached = async (url: string, ttl = 120000, config = {}) => {
 
   const response = await api.get(url, config);
   const data = response.data;
-  cache.set(url, { data, expires: now + ttl });
+  cache.set(cacheKey, { data, expires: now + ttl });
   return data;
 };
+
+export const clearApiCache = () => cache.clear();
 
 export const batchGet = async (urls: string[]) => {
   const responses = await Promise.all(urls.map((url) => api.get(url)));

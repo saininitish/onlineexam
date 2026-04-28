@@ -20,6 +20,7 @@ const rowIsCorrect = (a: any) => {
 const Dashboard: React.FC = () => {
   const [tests, setTests] = useState<any[]>([]);
   const [attempts, setAttempts] = useState<any[]>([]);
+  const [userStats, setUserStats] = useState<any>({ xp: 0, coins: 0, streak: 0 });
   const [loading, setLoading] = useState(true);
   const [submitSummary, setSubmitSummary] = useState<any>(null);
   const { user } = useAuthStore();
@@ -29,16 +30,22 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { tests, attempts } = await getCached('/student/dashboard', 120000);
+        // Cache tests as they don't change often
+        const { tests, stats } = await getCached('/student/dashboard', 120000);
         setTests(tests);
-        setAttempts(attempts);
+        if (stats) setUserStats(stats);
+        
+        // Always fetch fresh attempts to keep reattempt/history accurate
+        const attemptsRes = await api.get('/student/attempts');
+        setAttempts(attemptsRes.data);
       } catch (err) {
         try {
-          const [testsRes, attemptsRes] = await Promise.all([
-            api.get('/student/tests'),
+          const [{ data: dashData }, attemptsRes] = await Promise.all([
+            api.get('/student/dashboard'),
             api.get('/student/attempts')
           ]);
-          setTests(testsRes.data);
+          setTests(dashData.tests);
+          if (dashData.stats) setUserStats(dashData.stats);
           setAttempts(attemptsRes.data);
         } catch (fallbackError) {
           console.error('Failed to fetch dashboard data', fallbackError);
@@ -186,9 +193,9 @@ const Dashboard: React.FC = () => {
             {/* Gamification Stats */}
             <div style={{ display: 'flex', gap: '1rem' }}>
               {[
-                { label: 'Streak', value: '12 Days', icon: Sparkles, color: '#ec4899' },
-                { label: 'Total XP', value: '2,450', icon: Zap, color: '#f59e0b' },
-                { label: 'Rank', value: 'Silver III', icon: Trophy, color: '#94a3b8' },
+                { label: 'Streak', value: `${userStats.streak || 0} Days`, icon: Sparkles, color: '#ec4899' },
+                { label: 'Total XP', value: (userStats.xp || 0).toLocaleString(), icon: Zap, color: '#f59e0b' },
+                { label: 'Level', value: Math.floor((userStats.xp || 0) / 1000) + 1, icon: Trophy, color: '#94a3b8' },
               ].map((stat, i) => (
                 <motion.div
                   key={stat.label}

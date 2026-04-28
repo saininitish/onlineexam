@@ -42,7 +42,7 @@ const App: React.FC = () => {
 
             {/* Protected Admin Routes */}
             <Route path="/admin" element={user && user.role === 'admin' ? <AdminDashboard /> : <Navigate to="/login" />} />
-            <Route path="/analytics" element={user && user.role === 'admin' ? <Analytics /> : <Navigate to="/login" />} />
+            <Route path="/analytics" element={user && (user.role === 'admin' || user.role === 'student') ? <Analytics /> : <Navigate to="/login" />} />
           </Routes>
         </Suspense>
       </main>

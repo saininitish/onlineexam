@@ -55,16 +55,21 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
 
-    const [testsResult, attemptsResult] = await Promise.all([
+    const [testsResult, attemptsResult, userResult] = await Promise.all([
       supabase
         .from('tests')
         .select('id, title, duration, marks_per_question, negative_mark')
         .order('created_at', { ascending: false }),
       supabase
         .from('attempts')
-        .select('id, test_id, score, submitted_at')
+        .select('*, tests(title, duration, marks_per_question, negative_mark)')
         .eq('user_id', userId)
-        .order('submitted_at', { ascending: false })
+        .order('submitted_at', { ascending: false }),
+      supabase
+        .from('users')
+        .select('xp, coins, streak, role')
+        .eq('id', userId)
+        .single()
     ]);
 
     if (testsResult.error) throw testsResult.error;
@@ -72,7 +77,8 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
 
     res.status(200).json({
       tests: testsResult.data || [],
-      attempts: attemptsResult.data || []
+      attempts: attemptsResult.data || [],
+      stats: userResult.data || { xp: 0, coins: 0, streak: 0 }
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -211,11 +217,11 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
 
     // Update User Stats (XP, Coins, Streaks)
     const { data: userData } = await supabase.from('users').select('xp, coins, streak, last_test_at').eq('id', userId).single();
-    
+
     let newStreak = (userData?.streak || 0);
     const lastTest = userData?.last_test_at ? new Date(userData.last_test_at) : null;
     const today = new Date();
-    
+
     if (!lastTest || (today.getTime() - lastTest.getTime()) > 86400000 * 2) {
       newStreak = 1; // Reset if missed a day
     } else if ((today.getTime() - lastTest.getTime()) > 86400000) {
