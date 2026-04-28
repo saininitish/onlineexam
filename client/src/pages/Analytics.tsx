@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import {
-  TrendingUp, Target, Zap, Brain, Sparkles, Activity, RefreshCw, Trophy, Rocket, History, LayoutDashboard
-} from 'lucide-react';
+import { TrendingUp, Target, Zap, Brain, Sparkles, Activity, Trophy, Rocket, History, LayoutDashboard, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area
