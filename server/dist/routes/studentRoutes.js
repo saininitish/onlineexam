@@ -11,7 +11,8 @@ router.post('/submit', submitTest);
 router.get('/attempts', getAttempts);
 router.get('/attempt/:id', getAttemptDetails);
 router.get('/leaderboard/:testId', getLeaderboard);
-// AI Explanation
-import { handleExplainQuestion } from '../controllers/aiController.js';
+// AI Features
+import { handleExplainQuestion, handleGetAIStudyPlan } from '../controllers/aiController.js';
 router.post('/ai/explain', handleExplainQuestion);
+router.post('/ai/study-plan', handleGetAIStudyPlan);
 export default router;

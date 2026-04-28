@@ -29,7 +29,7 @@ const Leaderboard: React.FC = () => {
   const getFilteredData = () => {
     let filtered = [...leaderboard];
     const now = new Date();
-    
+
     if (timeFilter === 'today') {
       const todayStr = now.toDateString();
       filtered = filtered.filter(entry => new Date(entry.submitted_at).toDateString() === todayStr);
@@ -137,10 +137,10 @@ const Leaderboard: React.FC = () => {
               return (
                 <motion.tr
                   key={entry.id}
-                  initial={{ opacity: 0, x: isTop10 ? -10 : 0 }} 
+                  initial={{ opacity: 0, x: isTop10 ? -10 : 0 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  style={{ 
+                  style={{
                     borderBottom: '1px solid var(--glass-border)',
                     background: isTop10 ? `rgba(99, 102, 241, ${0.15 - idx * 0.01})` : 'transparent',
                     boxShadow: idx === 0 ? 'inset 4px 0 0 var(--primary)' : 'none'

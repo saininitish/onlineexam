@@ -313,26 +313,32 @@ export const getAttemptDetails = async (req: AuthRequest, res: Response) => {
 export const getLeaderboard = async (req: AuthRequest, res: Response) => {
   try {
     const { testId } = req.params;
+    const isGlobal = testId === 'all';
 
-    // Get test title
-    const { data: test } = await supabase
-      .from('tests')
-      .select('title')
-      .eq('id', testId)
-      .single();
+    let testTitle = 'Global Leaderboard';
+    let query = supabase.from('attempts').select('*, users(name, email), tests(title)');
 
-    // Get all attempts for this test, sorted by score (desc), then time (asc)
-    const { data, error } = await supabase
-      .from('attempts')
-      .select('*, users(name, email)')
-      .eq('test_id', testId)
-      .order('score', { ascending: false })
-      .order('time_taken', { ascending: true });
+    if (isGlobal) {
+      // Global: Sort by overall score across all tests
+      query = query.order('score', { ascending: false });
+    } else {
+      // Specific test: Get title first
+      const { data: test } = await supabase
+        .from('tests')
+        .select('title')
+        .eq('id', testId)
+        .maybeSingle();
+      
+      testTitle = test?.title || 'Unknown Test';
+      query = query.eq('test_id', testId).order('score', { ascending: false });
+    }
+
+    const { data, error } = await query.order('time_taken', { ascending: true });
 
     if (error) throw error;
 
     res.status(200).json({
-      test_title: test?.title || 'Unknown Test',
+      test_title: testTitle,
       leaderboard: data
     });
   } catch (error: any) {

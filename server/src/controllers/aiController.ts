@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { generateAIQuestions, generateAIExplanation } from '../services/aiService.js';
+import { generateAIQuestions, generateAIExplanation, generateAIStudyPlan } from '../services/aiService.js';
+import { AuthRequest } from '../middleware/authMiddleware.js';
 
 export const handleGenerateQuestions = async (req: Request, res: Response) => {
   try {
@@ -16,6 +17,16 @@ export const handleExplainQuestion = async (req: Request, res: Response) => {
     const { question, correctAnswer, options } = req.body;
     const explanation = await generateAIExplanation(question, correctAnswer, options);
     res.json({ explanation });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const handleGetAIStudyPlan = async (req: AuthRequest, res: Response) => {
+  try {
+    const { performanceData } = req.body;
+    const studyPlan = await generateAIStudyPlan(performanceData);
+    res.json(studyPlan);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

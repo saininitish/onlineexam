@@ -12,13 +12,13 @@ export class AuthService {
     const accessToken = jwt.sign(
       { id: user.id, role: user.role },
       JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '7d' } // Increased from 1h to 7d to prevent frequent timeouts
     );
     
     const refreshToken = jwt.sign(
       { id: user.id },
       REFRESH_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
     
     return { accessToken, refreshToken };

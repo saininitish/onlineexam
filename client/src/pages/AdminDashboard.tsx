@@ -241,7 +241,9 @@ const AdminDashboard: React.FC = () => {
             : prev
         );
       } else {
-        const { data } = await api.post('/admin/tests', testForm);
+        // Omitting id for new test creation
+        const { id, ...createData } = testForm;
+        const { data } = await api.post('/admin/tests', createData);
         setSelectedTest(data);
         fetchQuestions(data.id);
       }

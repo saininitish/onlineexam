@@ -5,18 +5,42 @@ import { supabase } from '../config/supabase.js';
 export const getStudentPerformanceOverview = async (req, res) => {
     try {
         const userId = req.user?.id;
+        if (!userId)
+            return res.status(401).json({ message: 'Unauthorized' });
         const isAdmin = req.user?.role === 'admin';
-        let query = supabase
+        // 1. Fetch Performance Data
+        let perfQuery = supabase.from('student_performance_overview').select('*');
+        if (!isAdmin)
+            perfQuery = perfQuery.eq('student_id', userId);
+        const { data: performanceData, error: perfError } = await perfQuery;
+        if (perfError) {
+            console.error('perfError:', perfError);
+            throw perfError;
+        }
+        // 2. Fetch User Stats (XP, Streak)
+        const { data: userStats } = await supabase
+            .from('users')
+            .select('xp, streak, coins')
+            .eq('id', userId)
+            .maybeSingle();
+        // 3. Fetch All Scores for Ranking
+        const { data: allScores } = await supabase
             .from('student_performance_overview')
             .select('*');
-        // If not admin, only show their own data
-        if (!isAdmin) {
-            query = query.eq('student_id', userId);
-        }
-        const { data, error } = await query.order('avg_score', { ascending: false });
-        if (error)
-            throw error;
-        res.status(200).json(data);
+        // 4. Enrich Data
+        const enrichedData = (performanceData || []).map(item => {
+            // Find rank by sorting allScores in memory (safe)
+            const sortedScores = (allScores || []).sort((a, b) => (b.avg_score || b.avg_accuracy_percentage || 0) - (a.avg_score || a.avg_accuracy_percentage || 0));
+            const rank = sortedScores.findIndex(s => s.student_id === item.student_id) + 1;
+            const isCurrentUser = item.student_id === userId;
+            return {
+                ...item,
+                global_rank: rank || '---',
+                current_streak: isCurrentUser ? (userStats?.streak || 0) : (item.current_streak || 0),
+                total_xp_earned: isCurrentUser ? (userStats?.xp || 0) : (item.total_xp_earned || 0)
+            };
+        });
+        res.status(200).json(enrichedData);
     }
     catch (error) {
         res.status(500).json({ message: error.message });
@@ -26,40 +50,32 @@ export const getStudentTopicPerformance = async (req, res) => {
     try {
         const userId = req.user?.id;
         const isAdmin = req.user?.role === 'admin';
-        let query = supabase
-            .from('student_topic_performance')
-            .select('*');
-        // If not admin, only show their own data
-        if (!isAdmin) {
+        let query = supabase.from('student_topic_performance').select('*');
+        if (!isAdmin)
             query = query.eq('student_id', userId);
-        }
-        const { data, error } = await query.order('topic_accuracy_percentage', { ascending: false });
+        const { data, error } = await query;
         if (error)
             throw error;
-        res.status(200).json(data);
+        res.status(200).json(data || []);
     }
     catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: error.message, details: error });
     }
 };
 export const getStudentProgressTimeline = async (req, res) => {
     try {
         const userId = req.user?.id;
         const isAdmin = req.user?.role === 'admin';
-        let query = supabase
-            .from('student_progress_timeline')
-            .select('*');
-        // If not admin, only show their own data
-        if (!isAdmin) {
+        let query = supabase.from('student_progress_timeline').select('*');
+        if (!isAdmin)
             query = query.eq('student_id', userId);
-        }
-        const { data, error } = await query.order('week_start', { ascending: true });
+        const { data, error } = await query;
         if (error)
             throw error;
-        res.status(200).json(data);
+        res.status(200).json(data || []);
     }
     catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: error.message, details: error });
     }
 };
 // ===========================================
@@ -69,10 +85,7 @@ export const getTestPerformanceAnalytics = async (req, res) => {
     try {
         const userId = req.user?.id;
         const isAdmin = req.user?.role === 'admin';
-        let query = supabase
-            .from('test_performance_analytics')
-            .select('*');
-        // If not admin, only show tests they've attempted
+        let query = supabase.from('test_performance_analytics').select('*');
         if (!isAdmin) {
             const { data: attemptedTestIds } = await supabase
                 .from('attempts')
@@ -86,10 +99,12 @@ export const getTestPerformanceAnalytics = async (req, res) => {
                 return res.status(200).json([]);
             }
         }
-        const { data, error } = await query.order('avg_score', { ascending: false });
+        const { data, error } = await query;
         if (error)
             throw error;
-        res.status(200).json(data);
+        // Sort in memory safely
+        const sortedData = (data || []).sort((a, b) => (b.avg_score || 0) - (a.avg_score || 0));
+        res.status(200).json(sortedData);
     }
     catch (error) {
         res.status(500).json({ message: error.message });
@@ -101,8 +116,7 @@ export const getTestDifficultyAnalysis = async (req, res) => {
         const { data, error } = await supabase
             .from('test_difficulty_analysis')
             .select('*')
-            .eq('test_id', testId)
-            .order('difficulty_accuracy_percentage', { ascending: true });
+            .eq('test_id', testId);
         if (error)
             throw error;
         res.status(200).json(data);
@@ -116,17 +130,9 @@ export const getTestDifficultyAnalysis = async (req, res) => {
 // ===========================================
 export const getQuestionDifficultyMetrics = async (req, res) => {
     try {
-        const { testId } = req.params;
-        const { limit = 10 } = req.query;
-        let query = supabase
+        const { data, error } = await supabase
             .from('question_difficulty_metrics')
-            .select('*')
-            .order('difficulty_score', { ascending: false })
-            .limit(Number(limit));
-        if (testId) {
-            query = query.eq('test_id', testId);
-        }
-        const { data, error } = await query;
+            .select('*');
         if (error)
             throw error;
         res.status(200).json(data);
@@ -137,19 +143,14 @@ export const getQuestionDifficultyMetrics = async (req, res) => {
 };
 export const getHardestQuestionsRanking = async (req, res) => {
     try {
-        const { testId, limit = 20 } = req.query;
-        let query = supabase
-            .from('hardest_questions_ranking')
-            .select('*')
-            .order('difficulty_rank', { ascending: true })
-            .limit(Number(limit));
-        if (testId) {
-            query = query.eq('test_id', testId);
-        }
-        const { data, error } = await query;
+        const { data, error } = await supabase
+            .from('question_difficulty_metrics')
+            .select('*');
         if (error)
             throw error;
-        res.status(200).json(data);
+        // Sort by failure rate in memory
+        const sortedData = (data || []).sort((a, b) => (b.failure_rate || 0) - (a.failure_rate || 0));
+        res.status(200).json(sortedData.slice(0, 20));
     }
     catch (error) {
         res.status(500).json({ message: error.message });
@@ -160,15 +161,13 @@ export const getHardestQuestionsRanking = async (req, res) => {
 // ===========================================
 export const getGlobalLeaderboard = async (req, res) => {
     try {
-        const { limit = 50 } = req.query;
         const { data, error } = await supabase
             .from('global_leaderboard')
-            .select('*')
-            .order('global_rank', { ascending: true })
-            .limit(Number(limit));
+            .select('*');
         if (error)
             throw error;
-        res.status(200).json(data);
+        const sortedData = (data || []).sort((a, b) => (b.total_xp || 0) - (a.total_xp || 0));
+        res.status(200).json(sortedData);
     }
     catch (error) {
         res.status(500).json({ message: error.message });
@@ -177,16 +176,14 @@ export const getGlobalLeaderboard = async (req, res) => {
 export const getTestLeaderboard = async (req, res) => {
     try {
         const { testId } = req.params;
-        const { limit = 50 } = req.query;
         const { data, error } = await supabase
-            .from('test_leaderboard')
+            .from('test_leaderboards')
             .select('*')
-            .eq('test_id', testId)
-            .order('test_rank', { ascending: true })
-            .limit(Number(limit));
+            .eq('test_id', testId);
         if (error)
             throw error;
-        res.status(200).json(data);
+        const sortedData = (data || []).sort((a, b) => (b.score || 0) - (a.score || 0));
+        res.status(200).json(sortedData);
     }
     catch (error) {
         res.status(500).json({ message: error.message });
@@ -194,28 +191,13 @@ export const getTestLeaderboard = async (req, res) => {
 };
 export const getMonthlyLeaderboard = async (req, res) => {
     try {
-        const { month, year } = req.query;
-        const { limit = 50 } = req.query;
-        let query = supabase
+        const { data, error } = await supabase
             .from('monthly_leaderboard')
-            .select('*')
-            .order('monthly_rank', { ascending: true })
-            .limit(Number(limit));
-        if (month && year) {
-            // Filter by specific month/year if provided
-            const targetMonth = new Date(Number(year), Number(month) - 1, 1);
-            query = query.eq('month', targetMonth.toISOString().split('T')[0] + ' 00:00:00+00');
-        }
-        else {
-            // Get current month by default
-            const now = new Date();
-            const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            query = query.eq('month', currentMonth.toISOString().split('T')[0] + ' 00:00:00+00');
-        }
-        const { data, error } = await query;
+            .select('*');
         if (error)
             throw error;
-        res.status(200).json(data);
+        const sortedData = (data || []).sort((a, b) => (b.monthly_xp || 0) - (a.monthly_xp || 0));
+        res.status(200).json(sortedData);
     }
     catch (error) {
         res.status(500).json({ message: error.message });
@@ -228,17 +210,13 @@ export const getStudentEngagementMetrics = async (req, res) => {
     try {
         const userId = req.user?.id;
         const isAdmin = req.user?.role === 'admin';
-        let query = supabase
-            .from('student_engagement_metrics')
-            .select('*');
-        // If not admin, only show their own data
-        if (!isAdmin) {
+        let query = supabase.from('student_engagement_metrics').select('*');
+        if (!isAdmin)
             query = query.eq('student_id', userId);
-        }
-        const { data, error } = await query.order('last_activity', { ascending: false });
+        const { data, error } = await query;
         if (error)
             throw error;
-        res.status(200).json(data);
+        res.status(200).json(data || []);
     }
     catch (error) {
         res.status(500).json({ message: error.message });
@@ -248,10 +226,7 @@ export const getTestCompletionRates = async (req, res) => {
     try {
         const userId = req.user?.id;
         const isAdmin = req.user?.role === 'admin';
-        let query = supabase
-            .from('test_completion_rates')
-            .select('*');
-        // If not admin, only show tests they've attempted
+        let query = supabase.from('test_completion_rates').select('*');
         if (!isAdmin) {
             const { data: attemptedTestIds } = await supabase
                 .from('attempts')
@@ -265,10 +240,11 @@ export const getTestCompletionRates = async (req, res) => {
                 return res.status(200).json([]);
             }
         }
-        const { data, error } = await query.order('completion_rate_percentage', { ascending: false });
+        const { data, error } = await query;
         if (error)
             throw error;
-        res.status(200).json(data);
+        const sortedData = (data || []).sort((a, b) => (b.completion_rate_percentage || 0) - (a.completion_rate_percentage || 0));
+        res.status(200).json(sortedData);
     }
     catch (error) {
         res.status(500).json({ message: error.message });
@@ -298,17 +274,17 @@ export const getAnalyticsDashboard = async (req, res) => {
         const userId = req.user?.id;
         const isAdmin = req.user?.role === 'admin';
         // Get various metrics for dashboard
-        const [{ data: studentOverview }, { data: testAnalytics }, { data: globalLeaderboard }, { data: engagementMetrics }] = await Promise.all([
+        const [ovRes, testRes, leadRes, engRes] = await Promise.all([
             supabase.from('student_performance_overview').select('*').limit(10),
             supabase.from('test_performance_analytics').select('*').limit(10),
             supabase.from('global_leaderboard').select('*').limit(10),
             supabase.from('student_engagement_metrics').select('*').limit(10)
         ]);
         const dashboard = {
-            studentOverview: isAdmin ? studentOverview : studentOverview?.filter(s => s.student_id === userId),
-            testAnalytics,
-            globalLeaderboard,
-            engagementMetrics: isAdmin ? engagementMetrics : engagementMetrics?.filter(e => e.student_id === userId),
+            studentOverview: isAdmin ? (ovRes.data || []) : (ovRes.data || []).filter(s => s.student_id === userId),
+            testAnalytics: testRes.data || [],
+            globalLeaderboard: leadRes.data || [],
+            engagementMetrics: isAdmin ? (engRes.data || []) : (engRes.data || []).filter(e => e.student_id === userId),
             summary: {
                 totalStudents: isAdmin ? await getTotalCount('student_performance_overview') : 1,
                 totalTests: await getTotalCount('test_performance_analytics'),

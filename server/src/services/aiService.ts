@@ -65,3 +65,41 @@ export const generateAIExplanation = async (question: string, correctAnswer: str
     throw new Error("Failed to generate explanation with AI");
   }
 };
+
+export const generateAIStudyPlan = async (performanceData: any) => {
+  const prompt = `Act as an expert exam coach. Analyze the following student performance data and provide a personalized 7-day study plan and strategic insights.
+  Data: ${JSON.stringify(performanceData)}
+  
+  Format the response as a JSON object:
+  {
+    "insight": "General performance summary (Hinglish)",
+    "prediction": "Future score/rank prediction",
+    "plan": [
+      { "day": 1, "topic": "Topic Name", "task": "What to do" }
+    ],
+    "mastery_path": "Next milestone details"
+  }
+  Keep it encouraging and actionable. Mix of Hindi and English.`;
+
+  try {
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.6,
+      response_format: { type: "json_object" }
+    });
+
+    const text = chatCompletion.choices[0]?.message?.content || "{}";
+    const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanedText);
+  } catch (error) {
+    console.error("Groq Study Plan failed:", error);
+    // Return a basic fallback plan if AI fails
+    return {
+      insight: "AI temporary unavailable. Hume lagta hai aapko apne weak topics par dhyan dena chahiye.",
+      prediction: "Keep practicing to see results.",
+      plan: [{ day: 1, topic: "Revision", task: "Revise all weak topics" }],
+      mastery_path: "Goal: 80% Accuracy"
+    };
+  }
+};

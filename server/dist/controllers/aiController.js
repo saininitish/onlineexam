@@ -1,4 +1,4 @@
-import { generateAIQuestions, generateAIExplanation } from '../services/aiService.js';
+import { generateAIQuestions, generateAIExplanation, generateAIStudyPlan } from '../services/aiService.js';
 export const handleGenerateQuestions = async (req, res) => {
     try {
         const { topic, difficulty, count } = req.body;
@@ -14,6 +14,16 @@ export const handleExplainQuestion = async (req, res) => {
         const { question, correctAnswer, options } = req.body;
         const explanation = await generateAIExplanation(question, correctAnswer, options);
         res.json({ explanation });
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+export const handleGetAIStudyPlan = async (req, res) => {
+    try {
+        const { performanceData } = req.body;
+        const studyPlan = await generateAIStudyPlan(performanceData);
+        res.json(studyPlan);
     }
     catch (error) {
         res.status(500).json({ message: error.message });

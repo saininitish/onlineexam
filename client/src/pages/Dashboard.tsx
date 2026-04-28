@@ -57,7 +57,7 @@ const Dashboard: React.FC = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [location]);
 
   useEffect(() => {
     const id = (location.state as { submittedAttemptId?: string } | null)?.submittedAttemptId;
