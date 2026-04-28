@@ -258,7 +258,7 @@ export const getAnalyticsDashboard = async (req: AuthRequest, res: Response) => 
       .slice(0, 5);
 
     const totalAttempts = allAttempts?.length || 0;
-    const avgScore = totalAttempts > 0 ? Math.round(allAttempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalAttempts) : 0;
+    const avgScore = (allAttempts && totalAttempts > 0) ? Math.round(allAttempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalAttempts) : 0;
 
     const dashboard = {
       studentOverview: [{

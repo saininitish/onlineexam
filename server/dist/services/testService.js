@@ -11,9 +11,18 @@ export class TestService {
         return data;
     }
     static async createTest(testData, creatorId) {
+        // Sanitize data to match schema
+        const { title, duration, marks_per_question, negative_mark } = testData;
+        const cleanData = {
+            title,
+            duration: Number(duration),
+            marks_per_question: Number(marks_per_question),
+            negative_mark: Number(negative_mark),
+            created_by: creatorId
+        };
         const { data, error } = await supabase
             .from('tests')
-            .insert([{ ...testData, created_by: creatorId }])
+            .insert([cleanData])
             .select()
             .single();
         if (error)
