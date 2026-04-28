@@ -67,5 +67,5 @@ app.use((err: any, req: any, res: any, next: any) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server scaled and running on port ${PORT}`);
+  console.log(`🚀 Server scaled and running at: https://onlineexam-1-zhkf.onrender.com`);
 });
