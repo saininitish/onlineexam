@@ -32,6 +32,7 @@ app.use(rateLimit({
     legacyHeaders: false,
 }));
 app.use((req, res, next) => {
+    res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
     if (req.method === 'GET') {
         res.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=30');
     }
