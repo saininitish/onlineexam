@@ -35,7 +35,7 @@ app.use(cors({
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 app.use(compression());
 app.use(express.json({ limit: '50mb' }));
@@ -48,7 +48,8 @@ app.use(rateLimit({
 }));
 
 app.use((req, res, next) => {
-  res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
+  res.set('Referrer-Policy', 'no-referrer-when-downgrade'); // Less strict for debugging
   if (req.method === 'GET') {
     res.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=30');
   }

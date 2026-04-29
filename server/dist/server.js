@@ -17,10 +17,20 @@ const globalLimiter = rateLimit({
 });
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 app.use(cors({
-    origin: [frontendUrl, 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:3000'],
+    origin: [
+        frontendUrl,
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:5175',
+        'http://localhost:3000',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174',
+        'http://127.0.0.1:5175',
+        'http://127.0.0.1:3000'
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 app.use(compression());
 app.use(express.json({ limit: '50mb' }));
@@ -32,7 +42,8 @@ app.use(rateLimit({
     legacyHeaders: false,
 }));
 app.use((req, res, next) => {
-    res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
+    res.set('Referrer-Policy', 'no-referrer-when-downgrade'); // Less strict for debugging
     if (req.method === 'GET') {
         res.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=30');
     }
