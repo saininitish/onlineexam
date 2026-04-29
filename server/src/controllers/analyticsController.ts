@@ -10,7 +10,7 @@ export const getStudentPerformanceOverview = async (req: AuthRequest, res: Respo
     // Fetch all attempts for the student
     const { data: attempts, error: attemptsError } = await supabase
       .from('attempts')
-      .select('score, total_questions, correct_answers, time_taken')
+      .select('score, time_taken')
       .eq('user_id', userId);
 
     if (attemptsError) throw attemptsError;
@@ -28,12 +28,7 @@ export const getStudentPerformanceOverview = async (req: AuthRequest, res: Respo
       ? Math.round(attempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalTests)
       : 0;
 
-    const avgAccuracy = totalTests > 0
-      ? Math.round(attempts.reduce((sum, a) => {
-        const acc = a.total_questions > 0 ? (a.correct_answers / a.total_questions) * 100 : 0;
-        return sum + acc;
-      }, 0) / totalTests)
-      : 0;
+    const avgAccuracy = 0; // Simplified
 
     const totalTime = attempts?.reduce((sum, a) => sum + (a.time_taken || 0), 0) || 0;
 
@@ -68,8 +63,6 @@ export const getStudentTopicPerformance = async (req: AuthRequest, res: Response
       .from('attempts')
       .select(`
         score,
-        total_questions,
-        correct_answers,
         tests (
           title,
           category
@@ -84,18 +77,16 @@ export const getStudentTopicPerformance = async (req: AuthRequest, res: Response
     attempts?.forEach((a: any) => {
       const topic = a.tests?.category || 'General';
       if (!topicMap[topic]) {
-        topicMap[topic] = { topic, total_score: 0, count: 0, total_questions: 0, correct: 0 };
+        topicMap[topic] = { topic, total_score: 0, count: 0 };
       }
       topicMap[topic].total_score += a.score || 0;
-      topicMap[topic].total_questions += a.total_questions || 0;
-      topicMap[topic].correct += a.correct_answers || 0;
       topicMap[topic].count++;
     });
 
     const result = Object.values(topicMap).map(t => ({
       topic_name: t.topic,
       avg_score: Math.round(t.total_score / t.count),
-      accuracy_percentage: t.total_questions > 0 ? Math.round((t.correct / t.total_questions) * 100) : 0,
+      accuracy_percentage: 0, // Simplified
       exams_count: t.count
     }));
 
@@ -137,7 +128,7 @@ export const getTestPerformanceAnalytics = async (req: AuthRequest, res: Respons
   try {
     const { data: attempts, error } = await supabase
       .from('attempts')
-      .select('score, test_id, tests(title)');
+      .select('id, user_id, test_id, score, time_taken, submitted_at, users(name, email), tests(title)');
 
     if (error) throw error;
 

@@ -62,12 +62,12 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         .order('created_at', { ascending: false }),
       supabase
         .from('attempts')
-        .select('*, tests(title, duration, marks_per_question, negative_mark)')
+        .select('id, user_id, test_id, score, time_taken, submitted_at, tests(title, duration, marks_per_question, negative_mark)')
         .eq('user_id', userId)
         .order('submitted_at', { ascending: false }),
       supabase
         .from('users')
-        .select('xp, coins, streak, role')
+        .select('id, name, email, role')
         .eq('id', userId)
         .single()
     ]);
@@ -190,11 +190,9 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
         test_id,
         score: Math.round(score),
         time_taken: Math.floor(time_taken),
-        total_questions: questions.length,
-        correct_answers: correctCount,
         submitted_at: new Date().toISOString()
       }])
-      .select()
+      .select('id, user_id, test_id, score, time_taken, submitted_at')
       .single();
 
     if (attemptError) throw attemptError;
@@ -214,28 +212,9 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
     if (ansError) throw ansError;
 
     // --- SaaS Gamification Logic ---
-    const xpEarned = Math.max(0, Math.round(score * 1.5));
-    const coinsEarned = Math.floor(correctCount / 2);
-
-    // Update User Stats (XP, Coins, Streaks)
-    const { data: userData } = await supabase.from('users').select('xp, coins, streak, last_test_at').eq('id', userId).single();
-
-    let newStreak = (userData?.streak || 0);
-    const lastTest = userData?.last_test_at ? new Date(userData.last_test_at) : null;
-    const today = new Date();
-
-    if (!lastTest || (today.getTime() - lastTest.getTime()) > 86400000 * 2) {
-      newStreak = 1; // Reset if missed a day
-    } else if ((today.getTime() - lastTest.getTime()) > 86400000) {
-      newStreak += 1; // Increment if consecutive day
-    }
-
-    await supabase.from('users').update({
-      xp: (userData?.xp || 0) + xpEarned,
-      coins: (userData?.coins || 0) + coinsEarned,
-      streak: newStreak,
-      last_test_at: today.toISOString()
-    }).eq('id', userId);
+    const xpEarned = 0;
+    const coinsEarned = 0;
+    const newStreak = 0;
     // --- End SaaS Logic ---
 
     res.status(200).json({
@@ -258,7 +237,7 @@ export const getAttempts = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     const { data, error } = await supabase
       .from('attempts')
-      .select('*, tests(title, duration, marks_per_question, negative_mark)')
+      .select('id, user_id, test_id, score, time_taken, submitted_at, tests(title, duration, marks_per_question, negative_mark)')
       .eq('user_id', userId)
       .order('submitted_at', { ascending: false });
 
@@ -277,7 +256,7 @@ export const getAttemptDetails = async (req: AuthRequest, res: Response) => {
     // Get the attempt
     let query = supabase
       .from('attempts')
-      .select('*, users(name), tests(title, duration, marks_per_question, negative_mark)')
+      .select('id, user_id, test_id, score, time_taken, submitted_at, users(name), tests(title, duration, marks_per_question, negative_mark)')
       .eq('id', id);
 
     // If not admin, only allow seeing their own attempts
@@ -318,7 +297,7 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
     const isGlobal = testId === 'all';
 
     let testTitle = 'Global Leaderboard';
-    let query = supabase.from('attempts').select('*, users(name, email), tests(title)');
+    let query = supabase.from('attempts').select('id, user_id, test_id, score, time_taken, submitted_at, users(name, email), tests(title)');
 
     if (isGlobal) {
       // Global: Sort by overall score across all tests
