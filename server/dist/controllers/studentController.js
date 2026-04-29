@@ -159,6 +159,8 @@ export const submitTest = async (req, res) => {
                 test_id,
                 score: Math.round(score),
                 time_taken: Math.floor(time_taken),
+                total_questions: questions.length,
+                correct_answers: correctCount,
                 submitted_at: new Date().toISOString()
             }])
             .select()
