@@ -100,9 +100,10 @@ const ResultPage: React.FC = () => {
         options: { a: q.option_a, b: q.option_b, c: q.option_c, d: q.option_d }
       });
       setExplanations(prev => ({ ...prev, [qId]: data.explanation }));
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('AI Explanation failed.');
+      const msg = err.response?.data?.message || err.message;
+      alert(`AI Explanation failed: ${msg}`);
     } finally {
       setExplainingIds(prev => prev.filter(id => id !== qId));
     }
