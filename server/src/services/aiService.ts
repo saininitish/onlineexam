@@ -3,7 +3,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const apiKey = process.env.GROQ_API_KEY;
+if (!apiKey) {
+  console.warn("WARNING: GROQ_API_KEY is missing from environment variables!");
+}
+
+const groq = new Groq({ apiKey: apiKey || 'missing_key' });
 
 export const generateAIQuestions = async (topic: string, difficulty: string, count: number = 5) => {
   const prompt = `Generate ${count} multiple choice questions for a mock exam.
@@ -59,10 +64,11 @@ export const generateAIExplanation = async (question: string, correctAnswer: str
       temperature: 0.5,
     });
 
-    return chatCompletion.choices[0]?.message?.content || "";
-  } catch (error) {
+    return chatCompletion.choices[0]?.message?.content || "AI explanation temporarily unavailable.";
+  } catch (error: any) {
     console.error("Groq Explanation failed:", error);
-    throw new Error("Failed to generate explanation with AI");
+    // Provide a helpful fallback instead of throwing
+    return `Maaf kijiye, abhi AI explanation generate nahi ho payi. Par sahi jawab "${correctAnswer}" hai. (Error: ${error.message})`;
   }
 };
 

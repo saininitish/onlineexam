@@ -21,3 +21,5 @@ services:
         generateValue: true
       - key: REFRESH_SECRET
         generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
