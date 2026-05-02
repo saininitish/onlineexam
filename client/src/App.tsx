@@ -21,9 +21,9 @@ const App: React.FC = () => {
     <Router>
       {user && <Sidebar />}
       {!user && <Navbar />}
-      <main style={{ 
-        marginLeft: user ? '260px' : '0', 
-        padding: '2rem', 
+      <main style={{
+        marginLeft: user ? '260px' : '0',
+        padding: '2rem',
         minHeight: '100vh',
         transition: 'margin 0.3s ease',
         width: user ? 'calc(100% - 260px)' : '100%'
@@ -33,7 +33,7 @@ const App: React.FC = () => {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={!user ? <Login /> : <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} />} />
             <Route path="/register" element={!user ? <Register /> : <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} />} />
-            
+
             {/* Protected Student Routes */}
             <Route path="/dashboard" element={user && user.role === 'student' ? <Dashboard /> : <Navigate to="/login" />} />
             <Route path="/test/:id" element={user && (user.role === 'student' || user.role === 'admin') ? <TestEngine /> : <Navigate to="/login" />} />

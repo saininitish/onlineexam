@@ -91,7 +91,7 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
 
     const { data: test, error: testError } = await supabase
       .from('tests')
-      .select('*')
+      .select('id, title, duration, marks_per_question, negative_mark')
       .eq('id', id)
       .single();
 
@@ -118,7 +118,7 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
 
 export const submitTest = async (req: AuthRequest, res: Response) => {
   try {
-    const { test_id, answers, time_taken } = req.body;
+    const { test_id, answers, time_taken, tab_switches, fullscreen_exits } = req.body;
     const userId = req.user?.id;
 
     if (!Array.isArray(answers)) {
@@ -182,17 +182,21 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
       };
     });
 
-    // Save attempt
+    // Save attempt (Strictly sanitize columns)
+    const attemptPayload = {
+      user_id: userId,
+      test_id,
+      score: Number(score.toFixed(2)),
+      time_taken: Math.floor(time_taken),
+      tab_switches: Number(tab_switches) || 0,
+      fullscreen_exits: Number(fullscreen_exits) || 0,
+      submitted_at: new Date().toISOString()
+    };
+
     const { data: attempt, error: attemptError } = await supabase
       .from('attempts')
-      .insert([{
-        user_id: userId,
-        test_id,
-        score: Math.round(score),
-        time_taken: Math.floor(time_taken),
-        submitted_at: new Date().toISOString()
-      }])
-      .select('id, user_id, test_id, score, time_taken, submitted_at')
+      .insert([attemptPayload])
+      .select('id, user_id, test_id, score, time_taken, tab_switches, fullscreen_exits, submitted_at')
       .single();
 
     if (attemptError) throw attemptError;
@@ -225,6 +229,8 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
       wrong: wrongCount,
       unanswered: unansweredCount,
       total: questions.length,
+      tab_switches: attempt.tab_switches,
+      fullscreen_exits: attempt.fullscreen_exits,
       rewards: { xp: xpEarned, coins: coinsEarned, streak: newStreak }
     });
   } catch (error: any) {
@@ -237,7 +243,7 @@ export const getAttempts = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     const { data, error } = await supabase
       .from('attempts')
-      .select('id, user_id, test_id, score, time_taken, submitted_at, tests(title, duration, marks_per_question, negative_mark)')
+      .select('id, user_id, test_id, score, time_taken, tab_switches, fullscreen_exits, submitted_at, tests(title, duration, marks_per_question, negative_mark)')
       .eq('user_id', userId)
       .order('submitted_at', { ascending: false });
 
@@ -256,7 +262,7 @@ export const getAttemptDetails = async (req: AuthRequest, res: Response) => {
     // Get the attempt
     let query = supabase
       .from('attempts')
-      .select('id, user_id, test_id, score, time_taken, submitted_at, users(name), tests(title, duration, marks_per_question, negative_mark)')
+      .select('id, user_id, test_id, score, time_taken, tab_switches, fullscreen_exits, submitted_at, users(name), tests(title, duration, marks_per_question, negative_mark)')
       .eq('id', id);
 
     // If not admin, only allow seeing their own attempts
@@ -297,7 +303,7 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
     const isGlobal = testId === 'all';
 
     let testTitle = 'Global Leaderboard';
-    let query = supabase.from('attempts').select('id, user_id, test_id, score, time_taken, submitted_at, users(name, email), tests(title)');
+    let query = supabase.from('attempts').select('id, user_id, test_id, score, time_taken, tab_switches, fullscreen_exits, submitted_at, users(name, email), tests(title)');
 
     if (isGlobal) {
       // Global: Sort by overall score across all tests
@@ -309,7 +315,7 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
         .select('title')
         .eq('id', testId)
         .maybeSingle();
-      
+
       testTitle = test?.title || 'Unknown Test';
       query = query.eq('test_id', testId).order('score', { ascending: false });
     }

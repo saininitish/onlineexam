@@ -57,7 +57,10 @@ export const deleteTest = async (req: AuthRequest, res: Response) => {
 
 export const addQuestion = async (req: AuthRequest, res: Response) => {
   try {
-    const { data, error } = await supabase.from('questions').insert([req.body]).select().single();
+    const { test_id, question, option_a, option_b, option_c, option_d, correct_answer } = req.body;
+    const cleanData = { test_id, question, option_a, option_b, option_c, option_d, correct_answer };
+
+    const { data, error } = await supabase.from('questions').insert([cleanData]).select().single();
     if (error) throw new AppError(error.message, 500);
     res.status(201).json(data);
   } catch (error) {
@@ -69,9 +72,42 @@ export const bulkAddQuestions = async (req: AuthRequest, res: Response) => {
   try {
     const { test_id, questions } = req.body;
     if (!test_id || !Array.isArray(questions)) throw new AppError('Invalid input', 400);
-    const { data, error } = await supabase.from('questions').insert(questions.map(q => ({ ...q, test_id }))).select();
-    if (error) throw new AppError(error.message, 500);
-    res.status(201).json({ inserted: data?.length ?? 0, questions: data });
+
+    const CHUNK_SIZE = 100;
+    let insertedCount = 0;
+    const allInsertedData = [];
+
+    for (let i = 0; i < questions.length; i += CHUNK_SIZE) {
+      const chunk = questions.slice(i, i + CHUNK_SIZE);
+      console.log(`[BulkUpload] Inserting chunk ${i / CHUNK_SIZE + 1}...`);
+
+      const cleanChunk = chunk.map(q => ({
+        test_id,
+        question: q.question,
+        option_a: q.option_a,
+        option_b: q.option_b,
+        option_c: q.option_c,
+        option_d: q.option_d,
+        correct_answer: q.correct_answer
+      }));
+
+      const { data, error } = await supabase
+        .from('questions')
+        .insert(cleanChunk)
+        .select();
+
+      if (error) {
+        console.error('💥 [BulkUpload Error]:', error);
+        throw new AppError(`Database Error: ${error.message}`, 500);
+      }
+      if (data) {
+        insertedCount += data.length;
+        allInsertedData.push(...data);
+      }
+    }
+
+    console.log(`✅ [BulkUpload] Successfully inserted ${insertedCount} questions.`);
+    res.status(201).json({ inserted: insertedCount, questions: allInsertedData });
   } catch (error) {
     handleError(error, res);
   }
@@ -80,7 +116,11 @@ export const bulkAddQuestions = async (req: AuthRequest, res: Response) => {
 export const getQuestionsByTest = async (req: AuthRequest, res: Response) => {
   try {
     const { testId } = req.params;
-    const { data, error } = await supabase.from('questions').select('*').eq('test_id', testId).order('created_at', { ascending: true });
+    const { data, error } = await supabase
+      .from('questions')
+      .select('id, question, option_a, option_b, option_c, option_d, correct_answer, created_at')
+      .eq('test_id', testId)
+      .order('created_at', { ascending: true });
     if (error) throw new AppError(error.message, 500);
     res.status(200).json(data);
   } catch (error) {

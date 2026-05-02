@@ -5,7 +5,7 @@ export class TestService {
   static async getAllTests() {
     const { data, error } = await supabase
       .from('tests')
-      .select('*')
+      .select('id, title, duration, marks_per_question, negative_mark, created_by, created_at')
       .order('created_at', { ascending: false });
 
     if (error) throw new AppError(error.message, 500);

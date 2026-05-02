@@ -25,7 +25,7 @@ export const getStudentPerformanceOverview = async (req: AuthRequest, res: Respo
     // Calculate metrics manually
     const totalTests = attempts?.length || 0;
     const avgScore = totalTests > 0
-      ? Math.round(attempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalTests)
+      ? Number((attempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalTests).toFixed(2))
       : 0;
 
     const avgAccuracy = 0; // Simplified
@@ -85,7 +85,7 @@ export const getStudentTopicPerformance = async (req: AuthRequest, res: Response
 
     const result = Object.values(topicMap).map(t => ({
       topic_name: t.topic,
-      avg_score: Math.round(t.total_score / t.count),
+      avg_score: Number((t.total_score / t.count).toFixed(2)),
       accuracy_percentage: 0, // Simplified
       exams_count: t.count
     }));
@@ -145,7 +145,7 @@ export const getTestPerformanceAnalytics = async (req: AuthRequest, res: Respons
     const result = Object.values(testMap).map(t => ({
       test_id: t.test_id,
       test_name: t.title,
-      avg_score: Math.round(t.total_score / t.count),
+      avg_score: Number((t.total_score / t.count).toFixed(2)),
       total_attempts: t.count
     }));
 
@@ -188,7 +188,7 @@ export const getGlobalLeaderboard = async (req: AuthRequest, res: Response) => {
     const result = Object.values(leaderMap)
       .map((l: any) => ({
         ...l,
-        avg_score: Math.round(l.total_score / l.count)
+        avg_score: Number((l.total_score / l.count).toFixed(2))
       }))
       .sort((a, b) => b.avg_score - a.avg_score)
       .slice(0, 10);
@@ -244,17 +244,17 @@ export const getAnalyticsDashboard = async (req: AuthRequest, res: Response) => 
       leaderMap[uid].count++;
     });
     const globalLeaderboard = Object.values(leaderMap)
-      .map((l: any) => ({ student_name: l.name, avg_score: Math.round(l.total / l.count) }))
+      .map((l: any) => ({ student_name: l.name, avg_score: Number((l.total / l.count).toFixed(2)) }))
       .sort((a, b) => b.avg_score - a.avg_score)
       .slice(0, 5);
 
     const totalAttempts = allAttempts?.length || 0;
-    const avgScore = (allAttempts && totalAttempts > 0) ? Math.round(allAttempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalAttempts) : 0;
+    const avgScore = (allAttempts && totalAttempts > 0) ? Number((allAttempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalAttempts).toFixed(2)) : 0;
 
     const dashboard = {
       studentOverview: [{
         total_exams_taken: studentAttempts?.length || 0,
-        avg_score: studentAttempts && studentAttempts.length > 0 ? Math.round(studentAttempts.reduce((sum, a) => sum + (a.score || 0), 0) / studentAttempts.length) : 0,
+        avg_score: studentAttempts && studentAttempts.length > 0 ? Number((studentAttempts.reduce((sum, a) => sum + (a.score || 0), 0) / studentAttempts.length).toFixed(2)) : 0,
         current_streak: userStats?.streak || 0,
         total_xp_earned: userStats?.xp || 0
       }],

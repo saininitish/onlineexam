@@ -15,7 +15,7 @@ const Home: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '5rem' }}>
       {/* Hero Section */}
       <section style={{ textAlign: 'center', padding: '4rem 0' }}>
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -26,8 +26,8 @@ const Home: React.FC = () => {
             Myra Chappy
           </span>
         </motion.h1>
-        
-        <motion.p 
+
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
@@ -36,7 +36,7 @@ const Home: React.FC = () => {
           The ultimate platform for online mock tests. Practice, analyze, and improve your scores with our real-world exam simulation engine.
         </motion.p>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
@@ -54,10 +54,10 @@ const Home: React.FC = () => {
       {/* Features Grid */}
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
         {features.map((f, i) => (
-          <motion.div 
+          <motion.div
             key={i}
             whileHover={{ y: -5 }}
-            className="glass" 
+            className="glass"
             style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
           >
             <div style={{ background: 'var(--glass)', width: '50px', height: '50px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

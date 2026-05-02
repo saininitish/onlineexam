@@ -50,6 +50,8 @@ const TestEngine: React.FC = () => {
   const [timeSpentMap, setTimeSpentMap] = useState<Record<string, number>>({});
   const timeSpentMapRef = useRef(timeSpentMap);
   const lastTickRef = useRef<number>(Date.now());
+  const focusLossCountRef = useRef(0);
+  const fullscreenExitCountRef = useRef(0);
 
   useEffect(() => {
     timeSpentMapRef.current = timeSpentMap;
@@ -179,6 +181,7 @@ const TestEngine: React.FC = () => {
       if (document.hidden) {
         setFocusLossCount(prev => {
           const next = prev + 1;
+          focusLossCountRef.current = next;
           setCheatWarnings(w => [...w, `Tab switched ${next} time${next === 1 ? '' : 's'}. Stay on the test screen.`]);
           reportTestEvent('tab-switch', { count: next });
           return next;
@@ -193,6 +196,7 @@ const TestEngine: React.FC = () => {
       } else if (hasBeenFullscreen) {
         setFullscreenExitCount(prev => {
           const next = prev + 1;
+          fullscreenExitCountRef.current = next;
           setCheatWarnings(w => [...w, `Full-screen exited ${next} time${next === 1 ? '' : 's'}. Please remain in full-screen mode.`]);
           reportTestEvent('fullscreen-exit', { count: next });
           return next;
@@ -258,7 +262,9 @@ const TestEngine: React.FC = () => {
       const { data } = await api.post('/student/submit', {
         test_id: id,
         answers: answersRef.current,
-        time_taken: timeTaken
+        time_taken: timeTaken,
+        tab_switches: focusLossCountRef.current,
+        fullscreen_exits: fullscreenExitCountRef.current
       });
 
       // Save time tracking locally for analytics

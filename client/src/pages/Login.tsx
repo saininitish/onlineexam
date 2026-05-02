@@ -30,10 +30,10 @@ const Login: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '70vh' }}>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="glass" 
+        className="glass"
         style={{ padding: '3rem', width: '100%', maxWidth: '450px' }}
       >
         <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', textAlign: 'center' }}>Welcome Back</h2>
@@ -44,9 +44,9 @@ const Login: React.FC = () => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ position: 'relative' }}>
             <Mail size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input 
-              type="email" 
-              placeholder="Email Address" 
+            <input
+              type="email"
+              placeholder="Email Address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -55,26 +55,26 @@ const Login: React.FC = () => {
           </div>
           <div style={{ position: 'relative' }}>
             <Lock size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input 
-              type="password" 
-              placeholder="Password" 
+            <input
+              type="password"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               style={{ width: '100%', background: 'var(--glass)', border: '1px solid var(--glass-border)', padding: '1rem 1rem 1rem 3rem', borderRadius: '12px', color: 'white', fontSize: '1rem' }}
             />
           </div>
-          
-          <button 
-            type="submit" 
+
+          <button
+            type="submit"
             disabled={loading}
-            style={{ 
-              background: 'var(--primary)', 
-              color: 'white', 
-              padding: '1rem', 
-              borderRadius: '12px', 
-              fontWeight: 700, 
-              fontSize: '1rem', 
+            style={{
+              background: 'var(--primary)',
+              color: 'white',
+              padding: '1rem',
+              borderRadius: '12px',
+              fontWeight: 700,
+              fontSize: '1rem',
               marginTop: '1rem',
               display: 'flex',
               alignItems: 'center',

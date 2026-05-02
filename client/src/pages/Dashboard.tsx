@@ -35,7 +35,7 @@ const Dashboard: React.FC = () => {
           api.get('/student/dashboard'),
           api.get('/student/attempts')
         ]);
-        
+
         const { tests, stats } = dashRes.data;
         setTests(tests || []);
         if (stats) setUserStats(stats);
@@ -171,8 +171,8 @@ const Dashboard: React.FC = () => {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="glass"
-          style={{ 
-            padding: '2.5rem', 
+          style={{
+            padding: '2.5rem',
             background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.05))',
             borderRadius: '24px',
             border: '1px solid rgba(255,255,255,0.08)',
@@ -191,7 +191,7 @@ const Dashboard: React.FC = () => {
                 You've completed <span style={{ color: 'white', fontWeight: 700 }}>{attempts.length} tests</span> so far. Keep pushing your limits!
               </p>
             </div>
-            
+
             {/* Gamification Stats */}
             <div style={{ display: 'flex', gap: '1rem' }}>
               {[
@@ -385,143 +385,143 @@ const Dashboard: React.FC = () => {
               const triedBefore = attemptCount > 0;
 
               return (
-              <motion.div
-                key={test.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.4 }}
-                whileHover={{
-                  y: -8,
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-                  scale: 1.02
-                }}
-                whileTap={{ scale: 0.98 }}
-                className="glass"
-                style={{
-                  padding: '1rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.75rem',
-                  border: '1px solid var(--glass-border)',
-                  borderRadius: '14px',
-                  cursor: 'pointer',
-                  background: 'linear-gradient(135deg, var(--glass), rgba(255,255,255,0.02))',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onClick={() => navigate(`/test/${test.id}`)}
-              >
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: index * 0.1 + 0.2, type: 'spring', stiffness: 200 }}
-                  style={{
-                    position: 'absolute',
-                    top: '-20px',
-                    right: '-20px',
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    background: triedBefore ? 'rgba(16,185,129,0.2)' : 'rgba(99,102,241,0.2)',
-                    opacity: 0.6
+                  key={test.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.4 }}
+                  whileHover={{
+                    y: -8,
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                    scale: 1.02
                   }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: triedBefore && lastAttempt ? '0.5rem' : 0 }}>
-                    <motion.h3
-                      whileHover={{ color: 'var(--primary)' }}
-                      style={{ fontSize: '0.95rem', margin: 0, lineHeight: 1.35, fontWeight: 700 }}
-                    >
-                      {test.title}
-                    </motion.h3>
-                    {triedBefore && (
-                      <motion.span
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: index * 0.1 + 0.3 }}
-                        style={{
-                          fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'flex-start',
-                          padding: '0.15rem 0.45rem', borderRadius: '5px',
-                          background: 'rgba(16,185,129,0.15)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.3)'
-                        }}
+                  whileTap={{ scale: 0.98 }}
+                  className="glass"
+                  style={{
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: '14px',
+                    cursor: 'pointer',
+                    background: 'linear-gradient(135deg, var(--glass), rgba(255,255,255,0.02))',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  onClick={() => navigate(`/test/${test.id}`)}
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: index * 0.1 + 0.2, type: 'spring', stiffness: 200 }}
+                    style={{
+                      position: 'absolute',
+                      top: '-20px',
+                      right: '-20px',
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: triedBefore ? 'rgba(16,185,129,0.2)' : 'rgba(99,102,241,0.2)',
+                      opacity: 0.6
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: triedBefore && lastAttempt ? '0.5rem' : 0 }}>
+                      <motion.h3
+                        whileHover={{ color: 'var(--primary)' }}
+                        style={{ fontSize: '0.95rem', margin: 0, lineHeight: 1.35, fontWeight: 700 }}
                       >
-                        Attempted{attemptCount > 1 ? ` (${attemptCount}×)` : ''}
-                      </motion.span>
+                        {test.title}
+                      </motion.h3>
+                      {triedBefore && (
+                        <motion.span
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: index * 0.1 + 0.3 }}
+                          style={{
+                            fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'flex-start',
+                            padding: '0.15rem 0.45rem', borderRadius: '5px',
+                            background: 'rgba(16,185,129,0.15)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.3)'
+                          }}
+                        >
+                          Attempted{attemptCount > 1 ? ` (${attemptCount}×)` : ''}
+                        </motion.span>
+                      )}
+                    </div>
+                    {triedBefore && lastAttempt && (
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: index * 0.1 + 0.4 }}
+                        style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}
+                      >
+                        Last: <strong style={{ color: 'var(--text-main)' }}>{lastAttempt.score}</strong>
+                        {' · '}
+                        {new Date(lastAttempt.submitted_at).toLocaleDateString()}
+                      </motion.p>
                     )}
                   </div>
-                  {triedBefore && lastAttempt && (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.1 + 0.4 }}
-                      style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}
-                    >
-                      Last: <strong style={{ color: 'var(--text-main)' }}>{lastAttempt.score}</strong>
-                      {' · '}
-                      {new Date(lastAttempt.submitted_at).toLocaleDateString()}
-                    </motion.p>
-                  )}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <Clock size={12} /> {test.duration} min · +{test.marks_per_question}/Q · -{test.negative_mark}
-                    </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Clock size={12} /> {test.duration} min · +{test.marks_per_question}/Q · -{test.negative_mark}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <motion.button
+                        whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(99,102,241,0.3)' }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/test/${test.id}`); }}
+                        style={{
+                          background: triedBefore ? 'linear-gradient(135deg, var(--success), rgba(16,185,129,0.8))' : 'linear-gradient(135deg, var(--primary), rgba(99,102,241,0.8))',
+                          color: 'white',
+                          padding: '0.5rem 0.75rem',
+                          borderRadius: '8px',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.35rem',
+                          fontSize: '0.8rem',
+                          width: '100%',
+                          border: 'none',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(99,102,241,0.2)'
+                        }}
+                      >
+                        {triedBefore ? (
+                          <><RotateCcw size={14} /> Reattempt</>
+                        ) : (
+                          <><Play size={14} fill="currentColor" /> Start</>
+                        )}
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,215,0,0.15)' }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/leaderboard/${test.id}`); }}
+                        style={{
+                          background: 'rgba(255,215,0,0.08)',
+                          color: '#FFD700',
+                          padding: '0.45rem 0.75rem',
+                          borderRadius: '8px',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.35rem',
+                          fontSize: '0.75rem',
+                          width: '100%',
+                          border: '1px solid rgba(255,215,0,0.2)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Trophy size={14} /> Leaderboard
+                      </motion.button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    <motion.button
-                      whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(99,102,241,0.3)' }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={(e) => { e.stopPropagation(); navigate(`/test/${test.id}`); }}
-                      style={{
-                        background: triedBefore ? 'linear-gradient(135deg, var(--success), rgba(16,185,129,0.8))' : 'linear-gradient(135deg, var(--primary), rgba(99,102,241,0.8))',
-                        color: 'white',
-                        padding: '0.5rem 0.75rem',
-                        borderRadius: '8px',
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.35rem',
-                        fontSize: '0.8rem',
-                        width: '100%',
-                        border: 'none',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(99,102,241,0.2)'
-                      }}
-                    >
-                      {triedBefore ? (
-                        <><RotateCcw size={14} /> Reattempt</>
-                      ) : (
-                        <><Play size={14} fill="currentColor" /> Start</>
-                      )}
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,215,0,0.15)' }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={(e) => { e.stopPropagation(); navigate(`/leaderboard/${test.id}`); }}
-                      style={{
-                        background: 'rgba(255,215,0,0.08)',
-                        color: '#FFD700',
-                        padding: '0.45rem 0.75rem',
-                        borderRadius: '8px',
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.35rem',
-                        fontSize: '0.75rem',
-                        width: '100%',
-                        border: '1px solid rgba(255,215,0,0.2)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Trophy size={14} /> Leaderboard
-                    </motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            );
+                </motion.div>
+              );
             }) : (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}

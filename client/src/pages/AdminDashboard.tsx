@@ -94,7 +94,8 @@ function parseBulkQuestions(raw: string): BulkQuestionRow[] {
       const option_b = String(q.option_b ?? '').trim();
       const option_c = String(q.option_c ?? '').trim();
       const option_d = String(q.option_d ?? '').trim();
-      const correct_answer = String(q.correct_answer ?? '').trim().toLowerCase();
+      const correct_raw = q.correct_answer || q.correct_answers || '';
+      const correct_answer = String(correct_raw).trim().toLowerCase();
       if (!question || !option_a || !option_b || !option_c || !option_d) {
         throw new Error(`JSON row ${idx + 1}: question aur chaaron options zaroori hain.`);
       }
@@ -616,6 +617,7 @@ const AdminDashboard: React.FC = () => {
                   <th style={{ padding: '1rem' }}>Test</th>
                   <th style={{ padding: '1rem' }}>Score</th>
                   <th style={{ padding: '1rem' }}>Time</th>
+                  <th style={{ padding: '1rem' }}>Cheating</th>
                   <th style={{ padding: '1rem' }}>Date</th>
                   <th style={{ padding: '1rem' }}>Action</th>
                 </tr>
@@ -627,6 +629,15 @@ const AdminDashboard: React.FC = () => {
                     <td style={{ padding: '1rem' }}>{res.tests?.title || 'N/A'}</td>
                     <td style={{ padding: '1rem', fontWeight: 700, color: res.score >= 0 ? 'var(--success)' : 'var(--danger)' }}>{res.score}</td>
                     <td style={{ padding: '1rem' }}>{Math.floor(res.time_taken / 60)}m {res.time_taken % 60}s</td>
+                    <td style={{ padding: '1rem' }}>
+                       {res.tab_switches > 0 || res.fullscreen_exits > 0 ? (
+                         <span style={{ color: 'var(--danger)', fontSize: '0.8rem', fontWeight: 600 }}>
+                           ⚠️ {res.tab_switches} Tabs | {res.fullscreen_exits} FS
+                         </span>
+                       ) : (
+                         <span style={{ color: 'var(--success)', fontSize: '0.8rem' }}>Clean</span>
+                       )}
+                    </td>
                     <td style={{ padding: '1rem' }}>{new Date(res.submitted_at).toLocaleDateString()}</td>
                     <td style={{ padding: '1rem' }}>
                       <button
@@ -663,10 +674,10 @@ const AdminDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                      setQuestionForm({
-                        id: '', question: '', question_hi: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a',
-                        topic: '', difficulty: 'Medium', chapter: ''
-                      });
+                    setQuestionForm({
+                      id: '', question: '', question_hi: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a',
+                      topic: '', difficulty: 'Medium', chapter: ''
+                    });
                     setIsQuestionOpen(true);
                   }}
                   style={{ background: 'var(--success)', color: 'white', padding: '0.5rem 1rem', borderRadius: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', border: 'none', cursor: 'pointer' }}
@@ -750,17 +761,17 @@ const AdminDashboard: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
                     <label style={labelStyle}>Duration (mins)</label>
-                    <input type="number" required value={testForm.duration || ''} onChange={e => setTestForm({ ...testForm, duration: Number(e.target.value) })} style={inputStyle} />
+                    <input type="number" required value={testForm.duration ?? ''} onChange={e => setTestForm({ ...testForm, duration: Number(e.target.value) })} style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Marks/Q</label>
-                    <input type="number" required value={testForm.marks_per_question || ''} onChange={e => setTestForm({ ...testForm, marks_per_question: Number(e.target.value) })} style={inputStyle} />
+                    <input type="number" required step="any" value={testForm.marks_per_question ?? ''} onChange={e => setTestForm({ ...testForm, marks_per_question: Number(e.target.value) })} style={inputStyle} />
                   </div>
                 </div>
-                  <div>
-                    <label style={labelStyle}>Negative Mark</label>
-                    <input type="number" required step="1" value={testForm.negative_mark || ''} onChange={e => setTestForm({ ...testForm, negative_mark: Math.floor(Number(e.target.value)) })} style={inputStyle} />
-                  </div>
+                <div>
+                  <label style={labelStyle}>Negative Mark</label>
+                  <input type="number" required step="any" value={testForm.negative_mark ?? ''} onChange={e => setTestForm({ ...testForm, negative_mark: Number(e.target.value) })} style={inputStyle} />
+                </div>
                 <button type="submit" disabled={testLoading} style={{ background: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '12px', fontWeight: 700 }}>
                   {testLoading ? 'Saving...' : 'Save Test'}
                 </button>
@@ -884,9 +895,9 @@ const AdminDashboard: React.FC = () => {
                   <div><label style={labelStyle}>Chapter (Optional filter)</label><input type="text" value={generateForm.chapter} onChange={e => setGenerateForm({ ...generateForm, chapter: e.target.value })} style={inputStyle} /></div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                  <div><label style={labelStyle}>Duration (mins)</label><input required type="number" min="1" value={generateForm.duration || ''} onChange={e => setGenerateForm({ ...generateForm, duration: Number(e.target.value) })} style={inputStyle} /></div>
-                  <div><label style={labelStyle}>Marks / Q</label><input required type="number" min="1" value={generateForm.marks_per_question || ''} onChange={e => setGenerateForm({ ...generateForm, marks_per_question: Number(e.target.value) })} style={inputStyle} /></div>
-                  <div><label style={labelStyle}>Negative</label><input required type="number" min="0" step="1" value={generateForm.negative_mark || ''} onChange={e => setGenerateForm({ ...generateForm, negative_mark: Math.floor(Number(e.target.value)) })} style={inputStyle} /></div>
+                  <div><label style={labelStyle}>Duration (mins)</label><input required type="number" min="1" value={generateForm.duration ?? ''} onChange={e => setGenerateForm({ ...generateForm, duration: Number(e.target.value) })} style={inputStyle} /></div>
+                  <div><label style={labelStyle}>Marks / Q</label><input required type="number" min="0" step="any" value={generateForm.marks_per_question ?? ''} onChange={e => setGenerateForm({ ...generateForm, marks_per_question: Number(e.target.value) })} style={inputStyle} /></div>
+                  <div><label style={labelStyle}>Negative</label><input required type="number" min="0" step="any" value={generateForm.negative_mark ?? ''} onChange={e => setGenerateForm({ ...generateForm, negative_mark: Number(e.target.value) })} style={inputStyle} /></div>
                 </div>
 
                 <button type="submit" disabled={generating} style={{ background: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '12px', fontWeight: 700, marginTop: '1rem' }}>

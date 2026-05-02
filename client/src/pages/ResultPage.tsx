@@ -62,12 +62,12 @@ const ResultPage: React.FC = () => {
   const marksPerQ = Number(attempt.tests?.marks_per_question) || 0;
   const maxMarks = total * marksPerQ;
   const scoreVal = attempt.score != null ? Number(attempt.score) : 0;
-  
+
   // Time Efficiency
   const totalDurationSeconds = (attempt.tests?.duration || 0) * 60;
   const timeEfficiency = totalDurationSeconds > 0 ? Math.round(((totalDurationSeconds - attempt.time_taken) / totalDurationSeconds) * 100) : 0;
   const avgTimePerQ = total > 0 ? Math.round(attempt.time_taken / total) : 0;
-  
+
   // Insights logic
   const getInsight = () => {
     if (accuracy >= 80 && avgTimePerQ < 45) return { text: "Excellent! You have great speed and accuracy.", icon: <Zap color="var(--accent)" /> };
@@ -118,7 +118,7 @@ const ResultPage: React.FC = () => {
 
       {/* New Analysis Dashboard */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-        
+
         {/* Accuracy Circle */}
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
           <div style={{ position: 'relative', width: '120px', height: '120px', marginBottom: '1.5rem' }}>
@@ -169,35 +169,58 @@ const ResultPage: React.FC = () => {
             </div>
           </div>
           <div style={{ marginTop: '0.5rem' }}>
-             <div style={{ height: '8px', background: 'var(--glass)', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
-                <div style={{ width: `${(correct/total)*100}%`, background: 'var(--success)' }} />
-                <div style={{ width: `${(wrong/total)*100}%`, background: 'var(--danger)' }} />
-                <div style={{ width: `${(unanswered/total)*100}%`, background: 'var(--glass-border)' }} />
-             </div>
+            <div style={{ height: '8px', background: 'var(--glass)', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
+              <div style={{ width: `${(correct / total) * 100}%`, background: 'var(--success)' }} />
+              <div style={{ width: `${(wrong / total) * 100}%`, background: 'var(--danger)' }} />
+              <div style={{ width: `${(unanswered / total) * 100}%`, background: 'var(--glass-border)' }} />
+            </div>
           </div>
         </motion.div>
 
         {/* Speed & Insight */}
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="glass" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-                {insight.icon}
-             </div>
-             <div>
-                <h4 style={{ margin: 0, fontSize: '1rem' }}>Smart Insight</h4>
-                <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{insight.text}</p>
-             </div>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+              {insight.icon}
+            </div>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '1rem' }}>Smart Insight</h4>
+              <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{insight.text}</p>
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-             <div style={{ padding: '0.75rem', background: 'var(--glass)', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
-                <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Speed</p>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.95rem', fontWeight: 700 }}>{avgTimePerQ}s / Q</p>
-             </div>
-             <div style={{ padding: '0.75rem', background: 'var(--glass)', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
-                <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Efficiency</p>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.95rem', fontWeight: 700, color: timeEfficiency > 0 ? 'var(--success)' : 'var(--danger)' }}>{timeEfficiency}% Left</p>
-             </div>
+            <div style={{ padding: '0.75rem', background: 'var(--glass)', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Speed</p>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.95rem', fontWeight: 700 }}>{avgTimePerQ}s / Q</p>
+            </div>
+            <div style={{ padding: '0.75rem', background: 'var(--glass)', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Efficiency</p>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '0.95rem', fontWeight: 700, color: timeEfficiency > 0 ? 'var(--success)' : 'var(--danger)' }}>{timeEfficiency}% Left</p>
+            </div>
           </div>
+        </motion.div>
+
+        {/* Security & Integrity Report */}
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }} className="glass" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', border: (attempt.tab_switches > 0 || attempt.fullscreen_exits > 0) ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid var(--glass-border)' }}>
+          <h4 style={{ margin: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <AlertCircle size={20} color={(attempt.tab_switches > 0 || attempt.fullscreen_exits > 0) ? 'var(--danger)' : 'var(--success)'} />
+            Security Report
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ padding: '0.75rem', background: attempt.tab_switches > 0 ? 'rgba(239, 68, 68, 0.05)' : 'var(--glass)', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tab Switches</p>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: attempt.tab_switches > 0 ? 'var(--danger)' : 'var(--text-main)' }}>{attempt.tab_switches || 0}</p>
+            </div>
+            <div style={{ padding: '0.75rem', background: attempt.fullscreen_exits > 0 ? 'rgba(239, 68, 68, 0.05)' : 'var(--glass)', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
+              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>FS Exits</p>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: attempt.fullscreen_exits > 0 ? 'var(--danger)' : 'var(--text-main)' }}>{attempt.fullscreen_exits || 0}</p>
+            </div>
+          </div>
+          {attempt.tab_switches > 2 && (
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600 }}>
+              ⚠️ High suspicious activity detected.
+            </p>
+          )}
         </motion.div>
       </div>
 
@@ -315,12 +338,12 @@ const ResultPage: React.FC = () => {
                 <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
                   {explanations[ans.question_id] ? (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ padding: '1rem', background: 'rgba(99, 102, 241, 0.08)', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                       <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                         <Sparkles size={14} /> AI EXPLANATION
-                       </p>
-                       <p className="mixed-lang-text" dir="auto" style={{ fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-main)' }}>
-                         {explanations[ans.question_id]}
-                       </p>
+                      <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Sparkles size={14} /> AI EXPLANATION
+                      </p>
+                      <p className="mixed-lang-text" dir="auto" style={{ fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-main)' }}>
+                        {explanations[ans.question_id]}
+                      </p>
                     </motion.div>
                   ) : (
                     <button
