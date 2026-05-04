@@ -6,7 +6,6 @@ import {
   Trophy, 
   LogOut, 
   ChevronRight, 
-  User, 
   ShieldCheck,
   Settings,
   Users,
