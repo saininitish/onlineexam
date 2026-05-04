@@ -58,7 +58,21 @@ export const deleteTest = async (req: AuthRequest, res: Response) => {
 export const addQuestion = async (req: AuthRequest, res: Response) => {
   try {
     const { test_id, question, option_a, option_b, option_c, option_d, correct_answer } = req.body;
-    const cleanData = { test_id, question, option_a, option_b, option_c, option_d, correct_answer };
+
+    // Check for existing question in this test
+    const { data: existing, error: checkError } = await supabase
+      .from('questions')
+      .select('id')
+      .eq('test_id', test_id)
+      .ilike('question', question.trim())
+      .maybeSingle();
+
+    if (checkError) throw new AppError(checkError.message, 500);
+    if (existing) {
+      throw new AppError('This question already exists in this test.', 400);
+    }
+
+    const cleanData = { test_id, question: question.trim(), option_a, option_b, option_c, option_d, correct_answer };
 
     const { data, error } = await supabase.from('questions').insert([cleanData]).select().single();
     if (error) throw new AppError(error.message, 500);
@@ -73,17 +87,48 @@ export const bulkAddQuestions = async (req: AuthRequest, res: Response) => {
     const { test_id, questions } = req.body;
     if (!test_id || !Array.isArray(questions)) throw new AppError('Invalid input', 400);
 
+    // 1. Fetch existing questions for this test to prevent duplicates
+    const { data: existingQuestions, error: fetchError } = await supabase
+      .from('questions')
+      .select('question')
+      .eq('test_id', test_id);
+
+    if (fetchError) throw new AppError(fetchError.message, 500);
+
+    const existingSet = new Set(existingQuestions?.map(q => q.question.trim().toLowerCase()) || []);
+    const seenInBatch = new Set();
+    
+    // 2. Filter unique questions
+    const uniqueIncoming = questions.filter(q => {
+      const norm = q.question.trim().toLowerCase();
+      if (existingSet.has(norm) || seenInBatch.has(norm)) {
+        return false;
+      }
+      seenInBatch.add(norm);
+      return true;
+    });
+
+    const skippedCount = questions.length - uniqueIncoming.length;
+
+    if (uniqueIncoming.length === 0) {
+      return res.status(200).json({ 
+        message: 'All questions already exist or are duplicates in this batch.',
+        inserted: 0,
+        skipped: skippedCount
+      });
+    }
+
     const CHUNK_SIZE = 100;
     let insertedCount = 0;
     const allInsertedData = [];
 
-    for (let i = 0; i < questions.length; i += CHUNK_SIZE) {
-      const chunk = questions.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < uniqueIncoming.length; i += CHUNK_SIZE) {
+      const chunk = uniqueIncoming.slice(i, i + CHUNK_SIZE);
       console.log(`[BulkUpload] Inserting chunk ${i / CHUNK_SIZE + 1}...`);
 
       const cleanChunk = chunk.map(q => ({
         test_id,
-        question: q.question,
+        question: q.question.trim(),
         option_a: q.option_a,
         option_b: q.option_b,
         option_c: q.option_c,
@@ -106,8 +151,13 @@ export const bulkAddQuestions = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    console.log(`✅ [BulkUpload] Successfully inserted ${insertedCount} questions.`);
-    res.status(201).json({ inserted: insertedCount, questions: allInsertedData });
+    console.log(`✅ [BulkUpload] Successfully inserted ${insertedCount} questions. Skipped ${skippedCount} duplicates.`);
+    res.status(201).json({ 
+      inserted: insertedCount, 
+      skipped: skippedCount,
+      questions: allInsertedData,
+      message: skippedCount > 0 ? `Successfully inserted ${insertedCount} questions. ${skippedCount} duplicates were skipped.` : 'Successfully inserted all questions.'
+    });
   } catch (error) {
     handleError(error, res);
   }

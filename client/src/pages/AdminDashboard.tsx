@@ -174,6 +174,7 @@ const AdminDashboard: React.FC = () => {
   });
   const [savingQuestion, setSavingQuestion] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [bulkRaw, setBulkRaw] = useState('');
@@ -277,8 +278,9 @@ const AdminDashboard: React.FC = () => {
       setIsQuestionOpen(false);
       fetchQuestions(selectedTest.id);
       setTimeout(() => setSuccessMsg(''), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save question', err);
+      setErrorMsg(err?.response?.data?.message || 'Failed to save question');
     } finally {
       setSavingQuestion(false);
     }
@@ -389,11 +391,11 @@ const AdminDashboard: React.FC = () => {
         test_id: selectedTest.id,
         questions: rows
       });
-      setSuccessMsg(`${data.inserted} questions bulk mein add ho gaye!`);
+      setSuccessMsg(data.message || `${data.inserted} questions bulk mein add ho gaye!`);
       setBulkRaw('');
       setIsBulkOpen(false);
       fetchQuestions(selectedTest.id);
-      setTimeout(() => setSuccessMsg(''), 4000);
+      setTimeout(() => setSuccessMsg(''), 6000);
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||
@@ -674,11 +676,12 @@ const AdminDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setQuestionForm({
-                      id: '', question: '', question_hi: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a',
-                      topic: '', difficulty: 'Medium', chapter: ''
-                    });
-                    setIsQuestionOpen(true);
+                      setQuestionForm({
+                        id: '', question: '', question_hi: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a',
+                        topic: '', difficulty: 'Medium', chapter: ''
+                      });
+                      setErrorMsg('');
+                      setIsQuestionOpen(true);
                   }}
                   style={{ background: 'var(--success)', color: 'white', padding: '0.5rem 1rem', borderRadius: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', border: 'none', cursor: 'pointer' }}
                 >
@@ -701,6 +704,7 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             {successMsg && <div style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', padding: '0.75rem', borderRadius: '10px', marginBottom: '1rem', fontSize: '0.85rem', border: '1px solid rgba(16,185,129,0.2)' }}>{successMsg}</div>}
+            {errorMsg && <div style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '10px', marginBottom: '1rem', fontSize: '0.85rem', border: '1px solid rgba(239,68,68,0.2)' }}>{errorMsg}</div>}
 
             {questionsLoading ? <p>Loading...</p> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -846,6 +850,7 @@ const AdminDashboard: React.FC = () => {
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass" style={{ width: '100%', maxWidth: '600px', padding: '2.5rem', position: 'relative' }}>
               <button onClick={() => setIsQuestionOpen(false)} style={{ position: 'absolute', right: '1.5rem', top: '1.5rem', color: 'var(--text-muted)' }}><X size={24} /></button>
               <h2 style={{ marginBottom: '1.5rem' }}>{questionForm.id ? 'Edit Question' : 'Add Question'}</h2>
+              {errorMsg && <div style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '10px', marginBottom: '1rem', fontSize: '0.85rem', border: '1px solid rgba(239,68,68,0.2)' }}>{errorMsg}</div>}
               <form onSubmit={handleSaveQuestion} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <textarea required value={questionForm.question} onChange={e => setQuestionForm({ ...questionForm, question: e.target.value })} rows={3} style={inputStyle} placeholder="Question (English)..." />
