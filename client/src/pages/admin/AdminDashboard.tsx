@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, List, BarChart3, X, Trash2, FileQuestion, Eye, Trophy, Edit3, Search, Play, Upload, FileSpreadsheet, FileText, Table2 } from 'lucide-react';
-import api from '../services/api';
-import { serializeQuestion, parseQuestion } from '../utils/questionMeta';
+import api from '../../services/api';
+import { serializeQuestion, parseQuestion } from '../../utils/questionMeta';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '0.75rem', borderRadius: '10px',

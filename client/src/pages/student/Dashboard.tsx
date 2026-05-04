@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, History, Clock, FileText, ChevronRight, Trophy, BarChart3, X, CheckCircle2, XCircle, MinusCircle, RotateCcw, Award, Zap, Sparkles } from 'lucide-react';
-import api from '../services/api';
-import { useAuthStore } from '../store/authStore';
-import { SkeletonGrid, SkeletonList } from '../components/Skeleton';
+import api from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
+import { SkeletonGrid, SkeletonList } from '../../components/Skeleton';
 
 const normOpt = (v: string | null | undefined) =>
   v == null || v === '' ? '' : String(v).trim().toLowerCase();

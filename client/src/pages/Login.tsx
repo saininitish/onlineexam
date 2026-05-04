@@ -36,8 +36,8 @@ const Login: React.FC = () => {
         className="glass"
         style={{ padding: '3rem', width: '100%', maxWidth: '450px' }}
       >
-        <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', textAlign: 'center' }}>Welcome Back</h2>
-        <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: '2.5rem' }}>Login to continue your progress</p>
+        <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', textAlign: 'center' }}>Student Login</h2>
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: '2.5rem' }}>Access your dashboard and tests</p>
 
         {error && <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '10px', marginBottom: '1.5rem', fontSize: '0.9rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{error}</div>}
 
@@ -90,6 +90,11 @@ const Login: React.FC = () => {
         <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
           Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign Up</Link>
         </p>
+        <div style={{ textAlign: 'center', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
+          <Link to="/admin/login" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'none' }}>
+            Are you an Administrator? <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Login here</span>
+          </Link>
+        </div>
       </motion.div>
     </div>
   );

@@ -25,7 +25,15 @@ export class AuthService {
   }
 
   static async register(userData: any) {
-    const { name, email, password, role, referralCode } = userData;
+    const { name, email, password, role, referralCode, adminSecret } = userData;
+
+    // Security: Only allow admin registration if a secret key matches
+    if (role === 'admin') {
+      const systemAdminSecret = process.env.ADMIN_SECRET_KEY || 'my-super-secret-admin-key-123';
+      if (adminSecret !== systemAdminSecret) {
+        throw new AppError('Unauthorized: Invalid Admin Secret Key.', 401);
+      }
+    }
 
     const { data: existingUser } = await supabase
       .from('users')

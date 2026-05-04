@@ -1,51 +1,92 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import AdminLayout from './layouts/AdminLayout';
+import StudentLayout from './layouts/StudentLayout';
+import Navbar from './components/Navbar';
 
+// Lazy loading pages
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
+const AdminLogin = lazy(() => import('./pages/admin/Login'));
 const Register = lazy(() => import('./pages/Register'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
-const Analytics = lazy(() => import('./pages/Analytics'));
+const AdminRegister = lazy(() => import('./pages/admin/Register'));
+const StudentDashboard = lazy(() => import('./pages/student/Dashboard'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const Analytics = lazy(() => import('./pages/AnalyticsShared'));
 const TestEngine = lazy(() => import('./pages/TestEngine'));
 const ResultPage = lazy(() => import('./pages/ResultPage'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+
+// Public Layout (Navbar + Content)
+const PublicLayout = () => (
+  <>
+    <Navbar />
+    <main style={{ padding: '2rem', minHeight: '100vh' }}>
+      <Outlet />
+    </main>
+  </>
+);
 
 const App: React.FC = () => {
   const { user } = useAuthStore();
 
   return (
     <Router>
-      {user && <Sidebar />}
-      {!user && <Navbar />}
-      <main style={{
-        marginLeft: user ? '260px' : '0',
-        padding: '2rem',
-        minHeight: '100vh',
-        transition: 'margin 0.3s ease',
-        width: user ? 'calc(100% - 260px)' : '100%'
-      }}>
-        <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading page...</div>}>
-          <Routes>
+      <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>}>
+        <Routes>
+          {/* Public Routes */}
+          <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={!user ? <Login /> : <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} />} />
-            <Route path="/register" element={!user ? <Register /> : <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} />} />
+            <Route 
+              path="/login" 
+              element={!user ? <Login /> : <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />} 
+            />
+            <Route 
+              path="/admin/login" 
+              element={!user ? <AdminLogin /> : <Navigate to="/admin" replace />} 
+            />
+            <Route 
+              path="/register" 
+              element={!user ? <Register /> : <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />} 
+            />
+            <Route 
+              path="/admin/register" 
+              element={!user ? <AdminRegister /> : <Navigate to="/admin" replace />} 
+            />
+          </Route>
 
-            {/* Protected Student Routes */}
-            <Route path="/dashboard" element={user && user.role === 'student' ? <Dashboard /> : <Navigate to="/login" />} />
-            <Route path="/test/:id" element={user && (user.role === 'student' || user.role === 'admin') ? <TestEngine /> : <Navigate to="/login" />} />
-            <Route path="/result/:id" element={user ? <ResultPage /> : <Navigate to="/login" />} />
-            <Route path="/leaderboard/:testId" element={user ? <Leaderboard /> : <Navigate to="/login" />} />
+          {/* Admin Routes - Bilkul Alag! */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="tests" element={<div>Manage Tests Page (Coming Soon)</div>} />
+            <Route path="students" element={<div>Manage Students Page (Coming Soon)</div>} />
+            {/* Shared analytics but inside admin layout */}
+            <Route path="analytics" element={<Analytics />} />
+          </Route>
 
-            {/* Protected Admin Routes */}
-            <Route path="/admin" element={user && user.role === 'admin' ? <AdminDashboard /> : <Navigate to="/login" />} />
-            <Route path="/analytics" element={user && (user.role === 'admin' || user.role === 'student') ? <Analytics /> : <Navigate to="/login" />} />
-          </Routes>
-        </Suspense>
-      </main>
+          {/* Student Routes - Bilkul Alag! */}
+          <Route path="/dashboard" element={<StudentLayout />}>
+            <Route index element={<StudentDashboard />} />
+            <Route path="analytics" element={<Analytics />} />
+          </Route>
+
+          {/* Special Routes (Test Engine doesn't have sidebar) */}
+          <Route 
+            path="/test/:id" 
+            element={user ? <TestEngine /> : <Navigate to="/login" />} 
+          />
+          
+          <Route element={user?.role === 'admin' ? <AdminLayout /> : <StudentLayout />}>
+             <Route path="/result/:id" element={<ResultPage />} />
+             <Route path="/leaderboard/:testId" element={<Leaderboard />} />
+             <Route path="/analytics" element={<Analytics />} />
+          </Route>
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </Router>
   );
 };

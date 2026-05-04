@@ -37,7 +37,7 @@ const Register: React.FC = () => {
         className="glass"
         style={{ padding: '3rem', width: '100%', maxWidth: '450px' }}
       >
-        <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', textAlign: 'center' }}>Create Account</h2>
+        <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', textAlign: 'center' }}>Student Signup</h2>
         <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: '2.5rem' }}>Join Myra Chappy and start practicing</p>
 
         {error && <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '10px', marginBottom: '1.5rem', fontSize: '0.9rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{error}</div>}
@@ -77,22 +77,7 @@ const Register: React.FC = () => {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, role: 'student' })}
-              style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', background: formData.role === 'student' ? 'var(--primary)' : 'var(--glass)', border: '1px solid var(--glass-border)', color: 'white' }}
-            >
-              Student
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, role: 'admin' })}
-              style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', background: formData.role === 'admin' ? 'var(--primary)' : 'var(--glass)', border: '1px solid var(--glass-border)', color: 'white' }}
-            >
-              Admin
-            </button>
-          </div>
+
 
           <button
             type="submit"
@@ -119,6 +104,11 @@ const Register: React.FC = () => {
         <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
           Already have an account? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>Login</Link>
         </p>
+        <div style={{ textAlign: 'center', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
+          <Link to="/admin/register" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'none' }}>
+            Need an Administrator account? <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign up here</span>
+          </Link>
+        </div>
       </motion.div>
     </div>
   );
