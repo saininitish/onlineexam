@@ -118,7 +118,7 @@ export const getTestById = async (req: AuthRequest, res: Response) => {
 
 export const submitTest = async (req: AuthRequest, res: Response) => {
   try {
-    const { test_id, answers, time_taken, tab_switches, fullscreen_exits } = req.body;
+    const { test_id, answers, time_taken, tab_switches, fullscreen_exits, time_spent_map } = req.body;
     const userId = req.user?.id;
 
     if (!Array.isArray(answers)) {
@@ -178,7 +178,8 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
       return {
         question_id: q.id,
         selected_answer: selected,
-        is_correct: selected ? isCorrect : false
+        is_correct: selected ? isCorrect : false,
+        time_spent: time_spent_map ? (Number(time_spent_map[q.id]) || 0) : 0
       };
     });
 
@@ -190,6 +191,7 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
       time_taken: Math.floor(time_taken),
       tab_switches: Number(tab_switches) || 0,
       fullscreen_exits: Number(fullscreen_exits) || 0,
+      time_spent_map: time_spent_map || {},
       submitted_at: new Date().toISOString()
     };
 
@@ -206,7 +208,8 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
       attempt_id: attempt.id,
       question_id: r.question_id,
       selected_answer: r.selected_answer,
-      is_correct: r.is_correct
+      is_correct: r.is_correct,
+      time_spent: r.time_spent
     }));
 
     const { error: ansError } = await supabase

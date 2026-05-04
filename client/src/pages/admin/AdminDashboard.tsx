@@ -620,6 +620,7 @@ const AdminDashboard: React.FC = () => {
                   <th style={{ padding: '1rem' }}>Score</th>
                   <th style={{ padding: '1rem' }}>Time</th>
                   <th style={{ padding: '1rem' }}>Cheating</th>
+                  <th style={{ padding: '1rem' }}>Max Time Q</th>
                   <th style={{ padding: '1rem' }}>Date</th>
                   <th style={{ padding: '1rem' }}>Action</th>
                 </tr>
@@ -639,6 +640,18 @@ const AdminDashboard: React.FC = () => {
                        ) : (
                          <span style={{ color: 'var(--success)', fontSize: '0.8rem' }}>Clean</span>
                        )}
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      {res.time_spent_map && Object.keys(res.time_spent_map).length > 0 ? (() => {
+                        const maxEntry = Object.entries(res.time_spent_map as Record<string, number>)
+                          .reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
+                        return (
+                          <div style={{ fontSize: '0.8rem' }}>
+                            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{maxEntry[1].toFixed(0)}s</span>
+                            <span style={{ color: 'var(--text-muted)', marginLeft: '4px' }}>on Q-{maxEntry[0].slice(-4)}</span>
+                          </div>
+                        );
+                      })() : <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>N/A</span>}
                     </td>
                     <td style={{ padding: '1rem' }}>{new Date(res.submitted_at).toLocaleDateString()}</td>
                     <td style={{ padding: '1rem' }}>

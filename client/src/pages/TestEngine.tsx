@@ -264,7 +264,8 @@ const TestEngine: React.FC = () => {
         answers: answersRef.current,
         time_taken: timeTaken,
         tab_switches: focusLossCountRef.current,
-        fullscreen_exits: fullscreenExitCountRef.current
+        fullscreen_exits: fullscreenExitCountRef.current,
+        time_spent_map: timeSpentMapRef.current
       });
 
       // Save time tracking locally for analytics
