@@ -201,28 +201,30 @@ const ResultPage: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Security & Integrity Report */}
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }} className="glass" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', border: (attempt.tab_switches > 0 || attempt.fullscreen_exits > 0) ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid var(--glass-border)' }}>
-          <h4 style={{ margin: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <AlertCircle size={20} color={(attempt.tab_switches > 0 || attempt.fullscreen_exits > 0) ? 'var(--danger)' : 'var(--success)'} />
-            Security Report
-          </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div style={{ padding: '0.75rem', background: attempt.tab_switches > 0 ? 'rgba(239, 68, 68, 0.05)' : 'var(--glass)', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
-              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tab Switches</p>
-              <p style={{ margin: '0.2rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: attempt.tab_switches > 0 ? 'var(--danger)' : 'var(--text-main)' }}>{attempt.tab_switches || 0}</p>
+        {/* Security & Integrity Report - ADMIN ONLY */}
+        {role === 'admin' && (
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }} className="glass" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', border: (attempt.tab_switches > 0 || attempt.fullscreen_exits > 0) ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid var(--glass-border)' }}>
+            <h4 style={{ margin: 0, fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertCircle size={20} color={(attempt.tab_switches > 0 || attempt.fullscreen_exits > 0) ? 'var(--danger)' : 'var(--success)'} />
+              Security Report
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ padding: '0.75rem', background: attempt.tab_switches > 0 ? 'rgba(239, 68, 68, 0.05)' : 'var(--glass)', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
+                <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tab Switches</p>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: attempt.tab_switches > 0 ? 'var(--danger)' : 'var(--text-main)' }}>{attempt.tab_switches || 0}</p>
+              </div>
+              <div style={{ padding: '0.75rem', background: attempt.fullscreen_exits > 0 ? 'rgba(239, 68, 68, 0.05)' : 'var(--glass)', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
+                <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>FS Exits</p>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: attempt.fullscreen_exits > 0 ? 'var(--danger)' : 'var(--text-main)' }}>{attempt.fullscreen_exits || 0}</p>
+              </div>
             </div>
-            <div style={{ padding: '0.75rem', background: attempt.fullscreen_exits > 0 ? 'rgba(239, 68, 68, 0.05)' : 'var(--glass)', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
-              <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>FS Exits</p>
-              <p style={{ margin: '0.2rem 0 0', fontSize: '1.2rem', fontWeight: 800, color: attempt.fullscreen_exits > 0 ? 'var(--danger)' : 'var(--text-main)' }}>{attempt.fullscreen_exits || 0}</p>
-            </div>
-          </div>
-          {attempt.tab_switches > 2 && (
-            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600 }}>
-              ⚠️ High suspicious activity detected.
-            </p>
-          )}
-        </motion.div>
+            {attempt.tab_switches > 2 && (
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600 }}>
+                ⚠️ High suspicious activity detected.
+              </p>
+            )}
+          </motion.div>
+        )}
       </div>
 
       {/* Topics Summary */}

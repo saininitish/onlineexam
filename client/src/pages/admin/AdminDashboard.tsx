@@ -642,16 +642,27 @@ const AdminDashboard: React.FC = () => {
                        )}
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      {res.time_spent_map && Object.keys(res.time_spent_map).length > 0 ? (() => {
-                        const maxEntry = Object.entries(res.time_spent_map as Record<string, number>)
-                          .reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
-                        return (
-                          <div style={{ fontSize: '0.8rem' }}>
-                            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{maxEntry[1].toFixed(0)}s</span>
-                            <span style={{ color: 'var(--text-muted)', marginLeft: '4px' }}>on Q-{maxEntry[0].slice(-4)}</span>
-                          </div>
-                        );
-                      })() : <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>N/A</span>}
+                      {(() => {
+                        let map = res.time_spent_map;
+                        if (typeof map === 'string') {
+                          try { map = JSON.parse(map); } catch { map = null; }
+                        }
+                        
+                        if (map && typeof map === 'object' && Object.keys(map).length > 0) {
+                          const entries = Object.entries(map as Record<string, number>);
+                          const maxEntry = entries.reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
+                          
+                          if (maxEntry[1] > 0) {
+                            return (
+                              <div style={{ fontSize: '0.8rem' }}>
+                                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{Math.round(maxEntry[1])}s</span>
+                                <span style={{ color: 'var(--text-muted)', marginLeft: '4px' }}>on Q-{maxEntry[0].slice(-4)}</span>
+                              </div>
+                            );
+                          }
+                        }
+                        return <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>No data yet</span>;
+                      })()}
                     </td>
                     <td style={{ padding: '1rem' }}>{new Date(res.submitted_at).toLocaleDateString()}</td>
                     <td style={{ padding: '1rem' }}>
