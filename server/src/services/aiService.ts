@@ -3,9 +3,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const apiKey = process.env.GROQ_API_KEY;
+const apiKey = (process.env.GROQ_API_KEY || '').trim();
+
 if (!apiKey) {
   console.warn("WARNING: GROQ_API_KEY is missing from environment variables!");
+} else {
+  console.log(`[AI Service] API Key loaded: ${apiKey.substring(0, 10)}... (Length: ${apiKey.length})`);
 }
 
 const groq = new Groq({ apiKey: apiKey || 'missing_key' });
