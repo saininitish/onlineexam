@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useProctoring } from '../../hooks/useProctoring';
 import { useAuthStore } from '../../store/authStore';
 import { motion } from 'framer-motion';
