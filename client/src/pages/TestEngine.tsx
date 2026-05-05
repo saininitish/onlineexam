@@ -7,11 +7,26 @@ import { useAuthStore } from '../store/authStore';
 import { getStoredTestUiLang, setStoredTestUiLang, testUiStrings, type TestUiLang } from '../i18n/testUi';
 import { parseQuestion } from '../utils/questionMeta';
 import { Skeleton, SkeletonCard } from '../components/Skeleton';
+import { useProctoring } from '../hooks/useProctoring';
+import { Radio } from 'lucide-react';
+
 
 const TestEngine: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const role = useAuthStore(s => s.user?.role);
+  const user = useAuthStore(s => s.user);
+  const role = user?.role;
+  
+  // Only join proctoring room once user is identified
+  useEffect(() => {
+    if (user) {
+      console.log('User identified, joining proctoring room...');
+    }
+  }, [user]);
+
+  useProctoring('student', user?.id || 'anonymous', 'global-proctor-room');
+
+
   const [test, setTest] = useState<any>(null);
   const [currentIdx, setCurrentIdx] = useState(() => {
     const saved = localStorage.getItem(`test_index_${id}`);
@@ -629,8 +644,29 @@ const TestEngine: React.FC = () => {
             <Clock size={18} />
             <span>{formatTime(timeLeft)}</span>
           </motion.div>
+          
+          <motion.div
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              color: 'var(--danger)',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              background: 'rgba(239, 68, 68, 0.1)',
+              padding: '0.3rem 0.6rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(239, 68, 68, 0.2)'
+            }}
+          >
+            <Radio size={14} />
+            <span>LIVE PROCTORING</span>
+          </motion.div>
         </motion.div>
       </motion.nav>
+
       {cheatWarnings.length > 0 && (
         <AnimatePresence>
           <motion.div

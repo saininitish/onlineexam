@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, List, BarChart3, X, Trash2, FileQuestion, Eye, Trophy, Edit3, Search, Play, Upload, FileSpreadsheet, FileText, Table2 } from 'lucide-react';
+import { Plus, List, BarChart3, X, Trash2, FileQuestion, Eye, Trophy, Edit3, Search, Play, Upload, FileSpreadsheet, FileText, Table2, Radio } from 'lucide-react';
+import { LiveProctoring } from '../../components/admin/LiveProctoring';
+
 import api from '../../services/api';
 import { serializeQuestion, parseQuestion } from '../../utils/questionMeta';
 
@@ -149,7 +151,8 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [tests, setTests] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'tests' | 'results'>('tests');
+  const [activeTab, setActiveTab] = useState<'tests' | 'results' | 'monitor'>('tests');
+
 
   // Create/Edit Test Modal
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
@@ -509,19 +512,20 @@ const AdminDashboard: React.FC = () => {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        {(['tests', 'results'] as const).map(tab => (
+        {(['tests', 'results', 'monitor'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => { setActiveTab(tab); setSelectedTest(null); }}
             style={{
               padding: '0.75rem 2rem', borderRadius: '10px',
               background: activeTab === tab ? 'var(--glass)' : 'transparent',
-              color: activeTab === tab ? (tab === 'tests' ? 'var(--primary)' : 'var(--secondary)') : 'var(--text-muted)',
+              color: activeTab === tab ? (tab === 'tests' ? 'var(--primary)' : tab === 'monitor' ? 'var(--danger)' : 'var(--secondary)') : 'var(--text-muted)',
               fontWeight: 600,
-              border: activeTab === tab ? `1px solid ${tab === 'tests' ? 'var(--primary)' : 'var(--secondary)'}` : '1px solid transparent'
+              border: activeTab === tab ? `1px solid ${tab === 'tests' ? 'var(--primary)' : tab === 'monitor' ? 'var(--danger)' : 'var(--secondary)'}` : '1px solid transparent'
             }}
           >
             {tab === 'tests' ? <><List size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} /> Tests ({tests.length})</> :
+             tab === 'monitor' ? <><Radio size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} /> Live Monitor</> :
               <><BarChart3 size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} /> Results ({results.length})</>}
           </button>
         ))}
@@ -611,8 +615,11 @@ const AdminDashboard: React.FC = () => {
                 <p>No tests yet.</p>
               </div>
             )
+          ) : activeTab === 'monitor' ? (
+            <LiveProctoring roomId="global-proctor-room" />
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
                   <th style={{ padding: '1rem' }}>Student</th>

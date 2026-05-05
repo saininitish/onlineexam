@@ -5,10 +5,14 @@ import dotenv from 'dotenv';
 import v1Router from './routes/v1.js';
 import { handleError, AppError } from './utils/errorHandler.js';
 import { rateLimit } from 'express-rate-limit';
+import { createServer } from 'http';
+import { initSocket } from './socket.js';
 
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
+const io = initSocket(httpServer);
 const PORT = process.env.PORT || 5000;
 
 // Rate Limiting
@@ -41,8 +45,11 @@ app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
   res.set('Referrer-Policy', 'no-referrer-when-downgrade'); // Less strict for debugging
   if (req.method === 'GET') {
-    res.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=30');
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
   }
+
   next();
 });
 
@@ -66,6 +73,6 @@ app.use((err: any, req: any, res: any, next: any) => {
   handleError(err, res);
 });
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`🚀 Server scaled and running on port ${PORT}`);
 });

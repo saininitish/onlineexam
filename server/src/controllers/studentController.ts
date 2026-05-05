@@ -179,7 +179,8 @@ export const submitTest = async (req: AuthRequest, res: Response) => {
         question_id: q.id,
         selected_answer: selected,
         is_correct: selected ? isCorrect : false,
-        time_spent: time_spent_map ? (Number(time_spent_map[q.id]) || 0) : 0
+        time_spent: time_spent_map ? Math.round(Number(time_spent_map[q.id]) || 0) : 0
+
       };
     });
 
