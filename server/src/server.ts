@@ -2,17 +2,68 @@ import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import v1Router from './routes/v1.js';
 import { handleError, AppError } from './utils/errorHandler.js';
 import { rateLimit } from 'express-rate-limit';
-import { createServer } from 'http';
-import { initSocket } from './socket.js';
 
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
-const io = initSocket(httpServer);
+
+// Socket.io Initialization directly in server.ts
+const io = new Server(httpServer, {
+  cors: {
+    origin: ["https://onlineexam-vhld.vercel.app", "http://localhost:5173"],
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ['polling', 'websocket'],
+  allowEIO3: true
+});
+
+io.on('connection', (socket) => {
+  console.log('User connected to socket:', socket.id);
+
+  socket.on('student-ready', (data) => {
+    const { roomId } = data;
+    socket.join(roomId);
+    console.log(`Student ${socket.id} joined room ${roomId}`);
+    io.to(roomId).emit('student-joined', socket.id);
+  });
+
+  socket.on('admin-join', (roomId) => {
+    socket.join(roomId);
+    console.log(`Admin ${socket.id} joined room ${roomId}`);
+    socket.to(roomId).emit('discovery-request');
+  });
+
+  socket.on('signal', (data) => {
+    io.to(data.to).emit('signal', {
+      from: socket.id,
+      signal: data.signal,
+      type: data.type
+    });
+  });
+
+  socket.on('request-stream', (data) => {
+    io.to(data.studentId).emit('request-stream', {
+      adminId: socket.id
+    });
+  });
+
+  socket.on('disconnecting', () => {
+    for (const room of socket.rooms) {
+      socket.to(room).emit('student-left', socket.id);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
 const PORT = process.env.PORT || 5000;
 
 // Rate Limiting

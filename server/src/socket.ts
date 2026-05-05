@@ -3,10 +3,14 @@ import { Server as HttpServer } from 'http';
 
 export const initSocket = (httpServer: HttpServer) => {
   const io = new Server(httpServer, {
+    path: '/socket.io/', // Explicitly set path
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"]
-    }
+      origin: "*", // Allow all for debugging, can be restricted later
+      methods: ["GET", "POST"],
+      credentials: true
+    },
+    allowEIO3: true, // Compatibility for older clients if any
+    transports: ['polling', 'websocket']
   });
 
   io.on('connection', (socket) => {
