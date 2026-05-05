@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { API_URL } from '../services/api';
 
 const getSocketUrl = () => {
-  let url = import.meta.env.VITE_API_URL || '';
+  // Use the centralized API_URL (from env or Render fallback)
+  let url = API_URL;
+  
   if (url) {
     // Strip /api/v1 or /api from the end for socket.io
     url = url.replace(/\/api\/v1\/?$/, '').replace(/\/api\/?$/, '');
     return url;
   }
-  // If no env, fallback to current hostname but on port 5000
-  const protocol = window.location.protocol;
-  const hostname = window.location.hostname;
-  return `${protocol}//${hostname}:5000`;
+
+  // Local development fallback
+  return 'http://localhost:5000';
 };
 
 
@@ -31,7 +33,7 @@ export const useProctoring = (role: 'student' | 'admin', userId: string, roomId:
       transports: ['websocket', 'polling'], // Ensure connection
       reconnectionAttempts: 5
     });
-    
+
     setSocket(newSocket);
     socketRef.current = newSocket;
 
@@ -147,7 +149,7 @@ export const useProctoring = (role: 'student' | 'admin', userId: string, roomId:
   const startStreaming = async (adminId: string) => {
     console.log('Attempting to start streaming to admin:', adminId);
     const currentSocket = socketRef.current;
-    
+
     if (!currentSocket) {
       console.error('Cannot start streaming: Socket not initialized');
       return;
@@ -171,7 +173,7 @@ export const useProctoring = (role: 'student' | 'admin', userId: string, roomId:
         video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
         audio: true
       };
-      
+
       try {
         camStream = await navigator.mediaDevices.getUserMedia(hdConstraints);
       } catch (err) {
@@ -183,7 +185,7 @@ export const useProctoring = (role: 'student' | 'admin', userId: string, roomId:
       if (camStream) {
         const camPc = createPeerConnection(adminId, 'camera', currentSocket);
         camStream.getTracks().forEach(track => camPc.addTrack(track, camStream));
-        
+
         const camOffer = await camPc.createOffer();
         await camPc.setLocalDescription(camOffer);
         currentSocket.emit('signal', { to: adminId, signal: camPc.localDescription, type: 'camera' });

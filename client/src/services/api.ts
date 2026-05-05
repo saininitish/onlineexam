@@ -51,7 +51,7 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401 && !originalRequest.url.includes('/auth/login')) {
       // If we get a 401, the token is likely expired or invalid
       // Only logout if it's NOT a login attempt
-      const { useAuthStore } = await import('../store/authStore'); 
+      const { useAuthStore } = await import('../store/authStore');
       useAuthStore.getState().logout();
       window.location.href = '/login';
     }
