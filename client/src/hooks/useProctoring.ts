@@ -30,8 +30,10 @@ export const useProctoring = (role: 'student' | 'admin', userId: string, roomId:
   useEffect(() => {
     console.log('Initializing proctoring socket for role:', role);
     const newSocket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'], // Ensure connection
-      reconnectionAttempts: 5
+      transports: ['polling', 'websocket'], // Use polling first for better compatibility with Render
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000, // Increase timeout for cold starts
     });
 
     setSocket(newSocket);
