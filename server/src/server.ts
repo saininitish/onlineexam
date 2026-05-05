@@ -14,23 +14,20 @@ const app = express();
 const httpServer = createServer(app);
 
 // Socket.io Initialization directly in server.ts
+console.log('Initializing Socket.io server...');
 const io = new Server(httpServer, {
+  path: '/socket.io/',
   cors: {
-    origin: true, // Reflect request origin
+    origin: ["https://onlineexam-vhld.vercel.app", "http://localhost:5173"],
     methods: ["GET", "POST"],
     credentials: true
   },
   transports: ['polling', 'websocket'],
-  allowEIO3: true,
-  pingTimeout: 60000,
-  pingInterval: 25000
+  allowEIO3: true
 });
 
-// Explicitly attach to the httpServer
-io.attach(httpServer);
-
 io.on('connection', (socket) => {
-  console.log('User connected to socket:', socket.id);
+  console.log('✨ User connected to socket:', socket.id);
 
   socket.on('student-ready', (data) => {
     const { roomId } = data;
@@ -66,9 +63,10 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    console.log('User disconnected from socket:', socket.id);
   });
 });
+
 const PORT = process.env.PORT || 5000;
 
 // Rate Limiting
@@ -129,6 +127,8 @@ app.use((err: any, req: any, res: any, next: any) => {
   handleError(err, res);
 });
 
+// Start the server
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server scaled and running on port ${PORT}`);
+  console.log('✅ Socket.io initialized on httpServer');
 });
