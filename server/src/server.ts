@@ -16,13 +16,18 @@ const httpServer = createServer(app);
 // Socket.io Initialization directly in server.ts
 const io = new Server(httpServer, {
   cors: {
-    origin: ["https://onlineexam-vhld.vercel.app", "http://localhost:5173"],
+    origin: true, // Reflect request origin
     methods: ["GET", "POST"],
     credentials: true
   },
   transports: ['polling', 'websocket'],
-  allowEIO3: true
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
+
+// Explicitly attach to the httpServer
+io.attach(httpServer);
 
 io.on('connection', (socket) => {
   console.log('User connected to socket:', socket.id);
