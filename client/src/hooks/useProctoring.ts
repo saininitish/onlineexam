@@ -18,6 +18,7 @@ const getSocketUrl = () => {
 
 
 const SOCKET_URL = getSocketUrl();
+console.log('📡 Socket URL being used:', SOCKET_URL);
 
 
 export const useProctoring = (role: 'student' | 'admin', userId: string, roomId: string) => {
