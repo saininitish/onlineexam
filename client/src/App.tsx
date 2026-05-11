@@ -1,6 +1,7 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import { warmUpApi } from './services/api';
 import AdminLayout from './layouts/AdminLayout';
 import StudentLayout from './layouts/StudentLayout';
 import Navbar from './components/Navbar';
@@ -30,6 +31,10 @@ const PublicLayout = () => (
 
 const App: React.FC = () => {
   const { user } = useAuthStore();
+
+  useEffect(() => {
+    warmUpApi();
+  }, []);
 
   return (
     <Router>

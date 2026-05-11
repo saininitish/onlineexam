@@ -68,12 +68,19 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use((req, res, next) => {
-  // Log every request to see why socket.io might be failing
+  const startedAt = Date.now();
   console.log(`[REQ] ${req.method} ${req.url}`);
+  res.on('finish', () => {
+    console.log(`[RES] ${req.method} ${req.url} ${res.statusCode} ${Date.now() - startedAt}ms`);
+  });
   next();
 });
 
 // 3. Routes
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
 app.use('/api/v1', v1Router);
 app.use('/api', v1Router);
 
@@ -87,7 +94,7 @@ app.use((err: any, req: any, res: any, next: any) => {
 });
 
 // 5. Start Server
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log('✅ Socket.io initialized and bound to httpServer');

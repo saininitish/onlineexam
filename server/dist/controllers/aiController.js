@@ -12,10 +12,13 @@ export const handleGenerateQuestions = async (req, res) => {
 export const handleExplainQuestion = async (req, res) => {
     try {
         const { question, correctAnswer, options } = req.body;
+        console.log('[AI Explain] Request:', { question, correctAnswer, options });
         const explanation = await generateAIExplanation(question, correctAnswer, options);
+        console.log('[AI Explain] Success:', explanation.substring(0, 50) + '...');
         res.json({ explanation });
     }
     catch (error) {
+        console.error('[AI Explain] Error:', error.message);
         res.status(500).json({ message: error.message });
     }
 };

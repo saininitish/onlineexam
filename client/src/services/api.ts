@@ -11,6 +11,7 @@ const api = axios.create({
 });
 
 const cache = new Map<string, { data: unknown; expires: number }>();
+let warmUpPromise: Promise<void> | null = null;
 
 const getAuthToken = async () => {
   try {
@@ -76,6 +77,19 @@ export const getCached = async (url: string, ttl = 30000, config = {}) => {
 };
 
 export const clearApiCache = () => cache.clear();
+
+export const warmUpApi = () => {
+  if (!warmUpPromise) {
+    warmUpPromise = api.get('/health', { timeout: 15000 })
+      .then(() => undefined)
+      .catch(() => undefined)
+      .finally(() => {
+        warmUpPromise = null;
+      });
+  }
+
+  return warmUpPromise;
+};
 
 export const batchGet = async (urls: string[]) => {
   const responses = await Promise.all(urls.map((url) => api.get(url)));
