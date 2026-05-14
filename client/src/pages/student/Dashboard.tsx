@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, History, Clock, FileText, ChevronRight, Trophy, BarChart3, X, CheckCircle2, XCircle, MinusCircle, RotateCcw, Zap, Sparkles, Swords, Settings2, RefreshCw } from 'lucide-react';
+import { History, Clock, FileText, Trophy, X, Zap, Swords, Settings2, RefreshCw } from 'lucide-react';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
