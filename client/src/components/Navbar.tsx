@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { LogOut, LayoutDashboard, FileText, BarChart3 } from 'lucide-react';
+import { LogOut, LayoutDashboard, BarChart3, Swords } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -15,8 +15,8 @@ const Navbar: React.FC = () => {
   return (
     <nav className="glass" style={{ margin: '1rem', padding: '0.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: '1rem', zIndex: 1000 }}>
       <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, fontSize: '1.5rem', color: 'var(--primary)' }}>
-        <FileText size={28} />
-        <span>Myra Chappy</span>
+        <Swords size={28} />
+        <span>Exam Prep Battle</span>
       </Link>
 
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>

@@ -1,0 +1,56 @@
+import { Router } from 'express';
+import { BattleService } from '../services/battleService.js';
+import { authenticate } from '../middleware/authMiddleware.js';
+
+const router = Router();
+
+router.post('/create', authenticate, async (req: any, res) => {
+  try {
+    const { subject, chapter, topic, difficulty, time_limit, question_count } = req.body;
+    const battle = await BattleService.findAndJoinBattle(req.user.id, subject, chapter, topic, difficulty, time_limit, question_count);
+    res.json(battle);
+  } catch (error: any) {
+    console.error('[Battle Create Error]:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/join', authenticate, async (req: any, res) => {
+  try {
+    const { battleId } = req.body;
+    const battle = await BattleService.joinBattle(battleId, req.user.id);
+    res.json(battle);
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({ message: error.message });
+  }
+});
+
+router.get('/:id', authenticate, async (req, res) => {
+  try {
+    const battle = await BattleService.getBattle(req.params.id);
+    res.json(battle);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/:id/submit', authenticate, async (req: any, res) => {
+  try {
+    const result = await BattleService.submitAnswer(req.params.id, req.user.id, req.body);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/:id/finish', authenticate, async (req, res) => {
+  try {
+    const { winnerId, score1, score2 } = req.body;
+    const result = await BattleService.finishBattle(req.params.id, winnerId, { score1, score2 });
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+export default router;

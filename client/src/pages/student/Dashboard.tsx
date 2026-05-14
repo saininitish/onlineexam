@@ -1,642 +1,274 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, History, Clock, FileText, ChevronRight, Trophy, BarChart3, X, CheckCircle2, XCircle, MinusCircle, RotateCcw, Award, Zap, Sparkles } from 'lucide-react';
+import { Play, History, Clock, FileText, ChevronRight, Trophy, BarChart3, X, CheckCircle2, XCircle, MinusCircle, RotateCcw, Zap, Sparkles, Swords, Settings2, RefreshCw } from 'lucide-react';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
-import { SkeletonGrid, SkeletonList } from '../../components/Skeleton';
-
-const normOpt = (v: string | null | undefined) =>
-  v == null || v === '' ? '' : String(v).trim().toLowerCase();
-
-const rowIsCorrect = (a: any) => {
-  const q = a.questions ?? a.question;
-  const sel = normOpt(a.selected_answer);
-  if (!sel) return false;
-  if (q) return sel === normOpt(q.correct_answer);
-  return !!a.is_correct;
-};
 
 const Dashboard: React.FC = () => {
   const [tests, setTests] = useState<any[]>([]);
   const [attempts, setAttempts] = useState<any[]>([]);
   const [userStats, setUserStats] = useState<any>({ xp: 0, coins: 0, streak: 0 });
   const [loading, setLoading] = useState(true);
-  const [submitSummary, setSubmitSummary] = useState<any>(null);
+  const [showBattleModal, setShowBattleModal] = useState(false);
+  
+  const [battleConfig, setBattleConfig] = useState({ 
+    subject: 'Mathematics', 
+    chapter: '',
+    topic: '', 
+    difficulty: 'Medium',
+    time_limit: 60,
+    question_count: 5
+  });
+  const [creatingBattle, setCreatingBattle] = useState(false);
+
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation();
+
+  const subjects = ['Mathematics', 'Science', 'History', 'Geography', 'English', 'General Knowledge', 'Other'];
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      console.log('[Dashboard] Fetching data...');
+      const [dashRes, attemptsRes] = await Promise.all([
+        api.get('/student/dashboard'),
+        api.get('/student/attempts')
+      ]);
+      
+      console.log('[Dashboard] Data received:', { dash: dashRes.data, attempts: attemptsRes.data });
+      
+      const dashData = dashRes.data || {};
+      setTests(dashData.tests || []);
+      setUserStats(dashData.stats || { xp: 0, coins: 0, streak: 0 });
+      setAttempts(attemptsRes.data || []);
+    } catch (err) {
+      console.error('[Dashboard] Fetch Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch dashboard data directly to keep stats and tests fresh
-        const [dashRes, attemptsRes] = await Promise.all([
-          api.get('/student/dashboard'),
-          api.get('/student/attempts')
-        ]);
-
-        const { tests, stats } = dashRes.data;
-        setTests(tests || []);
-        if (stats) setUserStats(stats);
-        setAttempts(attemptsRes.data || []);
-      } catch (err) {
-        try {
-          const [{ data: dashData }, attemptsRes] = await Promise.all([
-            api.get('/student/dashboard'),
-            api.get('/student/attempts')
-          ]);
-          setTests(dashData.tests);
-          if (dashData.stats) setUserStats(dashData.stats);
-          setAttempts(attemptsRes.data);
-        } catch (fallbackError) {
-          console.error('Failed to fetch dashboard data', fallbackError);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
-  }, [location]);
+  }, []);
 
-  useEffect(() => {
-    const id = (location.state as { submittedAttemptId?: string } | null)?.submittedAttemptId;
-    if (!id) return;
+  const startBattle = async () => {
+    if (!battleConfig.chapter.trim() || !battleConfig.topic.trim()) {
+      alert('Please enter both Chapter and Topic name!');
+      return;
+    }
+    setCreatingBattle(true);
+    try {
+      const { data } = await api.post('/battle/create', battleConfig);
+      navigate(`/battle/${data.id}`);
+    } catch (err) {
+      alert('Failed to create battle. Make sure you ran the SQL commands!');
+    } finally {
+      setCreatingBattle(false);
+      setShowBattleModal(false);
+    }
+  };
 
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const { data } = await api.get(`/student/attempt/${id}`);
-        if (!cancelled) setSubmitSummary(data);
-        const attemptsRes = await api.get('/student/attempts');
-        if (!cancelled) setAttempts(attemptsRes.data);
-      } catch (err) {
-        console.error('Failed to load submitted attempt summary', err);
-      } finally {
-        if (!cancelled) {
-          navigate('/dashboard', { replace: true, state: {} });
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [location.state, navigate]);
+  const getTestAttemptInfo = (testId: string) => {
+    if (!Array.isArray(attempts)) return { count: 0, last: null };
+    const forTest = attempts.filter((a) => a.test_id === testId);
+    if (forTest.length === 0) return { count: 0, last: null };
+    const last = [...forTest].sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime())[0];
+    return { count: forTest.length, last };
+  };
 
   if (loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-      <header>
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}
-        >
-          <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--glass)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Award size={30} style={{ color: 'var(--primary)' }} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', background: 'var(--glass)', height: '2.5rem', borderRadius: '8px', width: '300px' }} />
-            <p style={{ color: 'var(--text-muted)', background: 'var(--glass)', height: '1rem', borderRadius: '4px', width: '400px' }} />
-          </div>
-        </motion.div>
-      </header>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) minmax(260px, 300px)',
-          gap: '2rem',
-          maxWidth: '960px',
-          margin: '0 auto',
-          width: '100%'
-        }}
-      >
-        <section>
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}
-          >
-            <FileText style={{ color: 'var(--primary)' }} size={22} />
-            <h2 style={{ fontSize: '1.35rem' }}>Available Mock Tests</h2>
-          </motion.div>
-          <SkeletonGrid columns={3} rows={2} />
-        </section>
-
-        <section>
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}
-          >
-            <History style={{ color: 'var(--secondary)' }} size={24} />
-            <h2 style={{ fontSize: '1.5rem' }}>Recent Attempts</h2>
-          </motion.div>
-          <SkeletonList count={5} />
-        </section>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '80vh', gap: '1rem', color: 'white' }}>
+      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
+        <RefreshCw size={40} color="var(--primary)" />
+      </motion.div>
+      <p>Loading your personalized dashboard...</p>
     </div>
   );
 
-  const summaryAnswers = submitSummary?.answers;
-  const answersList = Array.isArray(summaryAnswers) ? summaryAnswers : [];
-  const sCorrect = answersList.filter(rowIsCorrect).length;
-  const sWrong = answersList.filter((a: any) => normOpt(a.selected_answer) && !rowIsCorrect(a)).length;
-  const sSkipped = answersList.filter((a: any) => !normOpt(a.selected_answer)).length;
-  const sTotal = answersList.length;
-  const sMarksPer = Number(submitSummary?.attempt?.tests?.marks_per_question) || 0;
-  const sMax = sTotal * sMarksPer;
-  const sScore = submitSummary?.attempt?.score != null ? Number(submitSummary.attempt.score) : 0;
-  const sAccuracy = sTotal > 0 ? Math.round((sCorrect / sTotal) * 100) : 0;
-
-  const getTestAttemptInfo = (testId: string) => {
-    const forTest = attempts.filter((a) => a.test_id === testId);
-    const count = forTest.length;
-    if (count === 0) return { count: 0, last: null as (typeof attempts)[0] | null };
-    const last = [...forTest].sort(
-      (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
-    )[0];
-    return { count, last };
-  };
-
   return (
-    <div className="dashboard-container" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-      {/* SaaS Hero Section */}
-      <header>
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass"
-          style={{
-            padding: '2.5rem',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.05))',
-            borderRadius: '24px',
-            border: '1px solid rgba(255,255,255,0.08)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <p className="text-primary" style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '0.5rem' }}>Student Workspace</p>
-              <h1 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-0.03em', color: 'white', marginBottom: '0.5rem' }}>
-                Hey, {user?.name.split(' ')[0]}! <span style={{ opacity: 0.5 }}>👋</span>
-              </h1>
-              <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', maxWidth: '500px', lineHeight: 1.6 }}>
-                You've completed <span style={{ color: 'white', fontWeight: 700 }}>{attempts.length} tests</span> so far. Keep pushing your limits!
-              </p>
-            </div>
-
-            {/* Gamification Stats */}
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              {[
-                { label: 'Streak', value: `${userStats.streak || 0} Days`, icon: Sparkles, color: '#ec4899' },
-                { label: 'Total XP', value: (userStats.xp || 0).toLocaleString(), icon: Zap, color: '#f59e0b' },
-                { label: 'Level', value: Math.floor((userStats.xp || 0) / 1000) + 1, icon: Trophy, color: '#94a3b8' },
-              ].map((stat, i) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.1 + 0.3 }}
-                  className="glass"
-                  style={{ padding: '1rem 1.5rem', borderRadius: '16px', textAlign: 'center', minWidth: '120px' }}
-                >
-                  <stat.icon size={20} style={{ color: stat.color, marginBottom: '0.5rem' }} />
-                  <p style={{ fontSize: '1.25rem', fontWeight: 800, color: 'white', margin: 0 }}>{stat.value}</p>
-                  <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '0.25rem' }}>{stat.label}</p>
-                </motion.div>
-              ))}
-            </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', padding: '1rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+      {/* Header */}
+      <header className="glass" style={{ padding: '2.5rem', background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.05))', borderRadius: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
+          <div>
+            <h1 style={{ fontSize: '2.8rem', fontWeight: 900, marginBottom: '0.5rem' }}>
+              Hey, {user?.name?.split(' ')?.[0] || 'Student'}! 👋
+            </h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>
+              You've completed <span style={{ color: 'white', fontWeight: 700 }}>{attempts?.length || 0} tests</span>. Ready for more?
+            </p>
           </div>
-
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => navigate('/analytics')}
-              style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', background: 'var(--primary)', color: 'white', fontWeight: 700, border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
-            >
-              <BarChart3 size={18} /> View Full Report
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="glass"
-              style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', color: 'white', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}
-            >
-              My Achievements
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <div className="glass" style={{ padding: '1rem 1.5rem', textAlign: 'center', minWidth: '100px' }}>
+              <Zap size={20} color="#f59e0b" style={{ marginBottom: '0.4rem' }} />
+              <p style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>{userStats?.streak || 0}</p>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Streak</p>
+            </div>
+            <div className="glass" style={{ padding: '1rem 1.5rem', textAlign: 'center', minWidth: '100px' }}>
+              <Trophy size={20} color="#fbbf24" style={{ marginBottom: '0.4rem' }} />
+              <p style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>{Math.floor((userStats?.xp || 0) / 1000) + 1}</p>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Level</p>
+            </div>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={fetchData} className="glass" style={{ padding: '1rem', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <RefreshCw size={20} />
             </motion.button>
           </div>
-        </motion.div>
+        </div>
       </header>
 
-      {submitSummary && (
-        <AnimatePresence>
-          <motion.section
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="glass"
-            style={{ padding: '1.75rem', borderLeft: '4px solid var(--accent)', position: 'relative', overflow: 'hidden', zIndex: 1100 }}
-          >
-            <motion.div
-              initial={{ x: '-100%' }}
-              animate={{ x: '100%' }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '2px',
-                background: 'linear-gradient(90deg, transparent, var(--accent), transparent)',
-                opacity: 0.6
-              }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <motion.div
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <BarChart3 size={26} style={{ color: 'var(--accent)' }} />
-                </motion.div>
-                <div>
-                  <h2 style={{ fontSize: '1.2rem', marginBottom: '0.15rem' }}>🎉 Test Completed!</h2>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{submitSummary.attempt?.tests?.title}</p>
-                </div>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                type="button"
-                onClick={() => setSubmitSummary(null)}
-                aria-label="Dismiss summary"
-                style={{ padding: '0.45rem', borderRadius: '8px', background: 'var(--glass)', border: '1px solid var(--glass-border)', color: 'var(--text-muted)', cursor: 'pointer', lineHeight: 0 }}
-              >
-                <X size={18} />
-              </motion.button>
-            </div>
+      {/* Battle Arena */}
+      <section className="glass" style={{ padding: '2rem', border: '1px solid rgba(236,72,153,0.3)', background: 'linear-gradient(135deg, rgba(236,72,153,0.1), rgba(99,102,241,0.1))', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
+        <div style={{ flex: 1, minWidth: '300px' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.8rem', fontWeight: 800 }}><Swords size={28} color="var(--secondary)" /> Custom Quiz Battle</h2>
+          <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>Challenge the AI with your own chapters, topics, and time limits!</p>
+        </div>
+        <motion.button 
+          whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(236,72,153,0.3)' }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowBattleModal(true)} 
+          style={{ background: 'linear-gradient(135deg, var(--secondary), #be185d)', color: 'white', padding: '1rem 2rem', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem' }}
+        >
+          <Settings2 size={20} /> Configure Battle
+        </motion.button>
+      </section>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}
-            >
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                style={{ textAlign: 'center', padding: '1rem', background: 'var(--glass)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}
-              >
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Final Score</p>
-                <p style={{ fontSize: '1.8rem', fontWeight: 800, color: sScore >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                  {sScore}<span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}> / {sMax}</span>
-                </p>
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                style={{ textAlign: 'center', padding: '1rem', background: 'var(--glass)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}
-              >
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Accuracy</p>
-                <p style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary)' }}>{sAccuracy}%</p>
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                style={{ textAlign: 'center', padding: '1rem', background: 'var(--glass)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}
-              >
-                <CheckCircle2 size={24} style={{ color: 'var(--success)', marginBottom: '0.5rem' }} />
-                <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--success)', margin: 0 }}>{sCorrect}</p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Correct</p>
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                style={{ textAlign: 'center', padding: '1rem', background: 'var(--glass)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}
-              >
-                <XCircle size={24} style={{ color: 'var(--danger)', marginBottom: '0.5rem' }} />
-                <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--danger)', margin: 0 }}>{sWrong}</p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Wrong</p>
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                style={{ textAlign: 'center', padding: '1rem', background: 'var(--glass)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}
-              >
-                <MinusCircle size={24} style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }} />
-                <p style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-muted)', margin: 0 }}>{sSkipped}</p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Skipped</p>
-              </motion.div>
-            </motion.div>
-
-            <motion.button
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
-              whileHover={{ scale: 1.02, boxShadow: '0 8px 25px rgba(99,102,241,0.3)' }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={() => navigate(`/result/${submitSummary.attempt?.id}`)}
-              style={{ padding: '0.85rem 1.5rem', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary), rgba(99,102,241,0.8))', color: 'white', fontWeight: 700, fontSize: '0.95rem', border: 'none', cursor: 'pointer', width: '100%', boxShadow: '0 4px 15px rgba(99,102,241,0.2)' }}
-            >
-              📊 View Detailed Analysis
-            </motion.button>
-          </motion.section>
-        </AnimatePresence>
-      )}
-
-      <div
-        className="dashboard-main-grid"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) minmax(260px, 300px)',
-          gap: '2rem',
-          maxWidth: '960px',
-          margin: '0 auto',
-          width: '100%'
-        }}
-      >
-        {/* Available Tests — compact card grid */}
-        <section style={{ minWidth: 0 }}>
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}
-          >
-            <FileText style={{ color: 'var(--primary)' }} size={22} />
-            <h2 style={{ fontSize: '1.35rem' }}>Available Mock Tests</h2>
-          </motion.div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              gap: '0.75rem',
-              maxWidth: '640px'
-            }}
-          >
-            {tests.length > 0 ? tests.map((test, index) => {
-              const { count: attemptCount, last: lastAttempt } = getTestAttemptInfo(test.id);
-              const triedBefore = attemptCount > 0;
-
+      {/* Main Grid */}
+      <div className="dashboard-main-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '2.5rem' }}>
+        {/* Mock Tests */}
+        <section>
+          <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}><FileText color="var(--primary)" /> Available Mock Tests ({tests?.length || 0})</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+            {Array.isArray(tests) && tests.length > 0 ? tests.map((test, idx) => {
+              const { count, last } = getTestAttemptInfo(test.id);
               return (
-                <motion.div
+                <motion.div 
                   key={test.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.4 }}
-                  whileHover={{
-                    y: -8,
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-                    scale: 1.02
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                  className="glass"
-                  style={{
-                    padding: '1rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.75rem',
-                    border: '1px solid var(--glass-border)',
-                    borderRadius: '14px',
-                    cursor: 'pointer',
-                    background: 'linear-gradient(135deg, var(--glass), rgba(255,255,255,0.02))',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                  onClick={() => navigate(`/test/${test.id}`)}
+                  transition={{ delay: idx * 0.05 }}
+                  whileHover={{ y: -8, boxShadow: '0 12px 30px rgba(0,0,0,0.3)' }}
+                  className="glass" 
+                  style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px solid var(--glass-border)' }}
                 >
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: index * 0.1 + 0.2, type: 'spring', stiffness: 200 }}
-                    style={{
-                      position: 'absolute',
-                      top: '-20px',
-                      right: '-20px',
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      background: triedBefore ? 'rgba(16,185,129,0.2)' : 'rgba(99,102,241,0.2)',
-                      opacity: 0.6
-                    }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: triedBefore && lastAttempt ? '0.5rem' : 0 }}>
-                      <motion.h3
-                        whileHover={{ color: 'var(--primary)' }}
-                        style={{ fontSize: '0.95rem', margin: 0, lineHeight: 1.35, fontWeight: 700 }}
-                      >
-                        {test.title}
-                      </motion.h3>
-                      {triedBefore && (
-                        <motion.span
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ delay: index * 0.1 + 0.3 }}
-                          style={{
-                            fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', alignSelf: 'flex-start',
-                            padding: '0.15rem 0.45rem', borderRadius: '5px',
-                            background: 'rgba(16,185,129,0.15)', color: 'var(--success)', border: '1px solid rgba(16,185,129,0.3)'
-                          }}
-                        >
-                          Attempted{attemptCount > 1 ? ` (${attemptCount}×)` : ''}
-                        </motion.span>
-                      )}
-                    </div>
-                    {triedBefore && lastAttempt && (
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: index * 0.1 + 0.4 }}
-                        style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}
-                      >
-                        Last: <strong style={{ color: 'var(--text-main)' }}>{lastAttempt.score}</strong>
-                        {' · '}
-                        {new Date(lastAttempt.submitted_at).toLocaleDateString()}
-                      </motion.p>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <Clock size={12} /> {test.duration} min · +{test.marks_per_question}/Q · -{test.negative_mark}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <motion.button
-                        whileHover={{ scale: 1.05, boxShadow: '0 4px 15px rgba(99,102,241,0.3)' }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={(e) => { e.stopPropagation(); navigate(`/test/${test.id}`); }}
-                        style={{
-                          background: triedBefore ? 'linear-gradient(135deg, var(--success), rgba(16,185,129,0.8))' : 'linear-gradient(135deg, var(--primary), rgba(99,102,241,0.8))',
-                          color: 'white',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          fontWeight: 600,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.35rem',
-                          fontSize: '0.8rem',
-                          width: '100%',
-                          border: 'none',
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(99,102,241,0.2)'
-                        }}
-                      >
-                        {triedBefore ? (
-                          <><RotateCcw size={14} /> Reattempt</>
-                        ) : (
-                          <><Play size={14} fill="currentColor" /> Start</>
-                        )}
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,215,0,0.15)' }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={(e) => { e.stopPropagation(); navigate(`/leaderboard/${test.id}`); }}
-                        style={{
-                          background: 'rgba(255,215,0,0.08)',
-                          color: '#FFD700',
-                          padding: '0.45rem 0.75rem',
-                          borderRadius: '8px',
-                          fontWeight: 600,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.35rem',
-                          fontSize: '0.75rem',
-                          width: '100%',
-                          border: '1px solid rgba(255,215,0,0.2)',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <Trophy size={14} /> Leaderboard
-                      </motion.button>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '1.2rem', marginBottom: '0.4rem', lineHeight: 1.3 }}>{test.title}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                      <Clock size={14} /> {test.duration} min • +{test.marks_per_question}/Q
                     </div>
                   </div>
+                  {count > 0 && last && (
+                    <div style={{ padding: '0.5rem', background: 'rgba(16,185,129,0.1)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.2)', fontSize: '0.75rem', color: 'var(--success)' }}>
+                      Last Attempt: <strong>{last.score}</strong> ({new Date(last.submitted_at).toLocaleDateString()})
+                    </div>
+                  )}
+                  <button 
+                    onClick={() => navigate(`/test/${test.id}`)}
+                    style={{ background: 'var(--primary)', color: 'white', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, width: '100%' }}
+                  >
+                    {count > 0 ? 'Reattempt' : 'Start Test'}
+                  </button>
                 </motion.div>
               );
             }) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="glass"
-                style={{
-                  padding: '2rem',
-                  textAlign: 'center',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.9rem',
-                  borderRadius: '14px',
-                  gridColumn: '1 / -1',
-                  background: 'linear-gradient(135deg, var(--glass), rgba(255,255,255,0.02))'
-                }}
-              >
-                <motion.div
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <FileText size={48} style={{ marginBottom: '1rem', opacity: 0.5, color: 'var(--primary)' }} />
-                </motion.div>
-                <p style={{ margin: 0 }}>No tests available at the moment.</p>
-                <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Check back later for new mock tests! 🚀</p>
-              </motion.div>
+              <div className="glass" style={{ padding: '3rem', textAlign: 'center', gridColumn: '1 / -1', color: 'var(--text-muted)' }}>
+                <FileText size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                <p>No tests found. Make sure tests are created in the admin panel.</p>
+              </div>
             )}
           </div>
         </section>
 
-        {/* Recent Attempts */}
+        {/* Sidebar: Recent */}
         <section>
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}
-          >
-            <History style={{ color: 'var(--secondary)' }} size={24} />
-            <h2 style={{ fontSize: '1.5rem' }}>Recent Attempts</h2>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="glass"
-            style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
-          >
-            {attempts.length > 0 ? attempts.slice(0, 8).map((attempt, index) => (
-              <motion.div
-                key={attempt.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 + 0.4, duration: 0.4 }}
-                whileHover={{ x: 8, backgroundColor: 'rgba(255,255,255,0.02)' }}
-                style={{
-                  paddingBottom: '1rem',
-                  borderBottom: index < Math.min(attempts.length, 8) - 1 ? '1px solid var(--glass-border)' : 'none',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  padding: '1rem',
-                  marginBottom: '0.5rem'
-                }}
-                onClick={() => navigate(`/result/${attempt.id}`)}
+          <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}><History color="var(--secondary)" /> Recent History</h2>
+          <div className="glass" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {Array.isArray(attempts) && attempts.length > 0 ? attempts.slice(0, 8).map((a, idx) => (
+              <motion.div 
+                key={a.id} 
+                whileHover={{ x: 5, background: 'rgba(255,255,255,0.03)' }}
+                style={{ padding: '0.75rem', borderBottom: idx < Math.min(attempts.length, 8) - 1 ? '1px solid var(--glass-border)' : 'none', cursor: 'pointer', borderRadius: '8px' }} 
+                onClick={() => navigate(`/result/${a.id}`)}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.3rem' }}>
-                  <motion.span
-                    whileHover={{ color: 'var(--primary)' }}
-                    style={{ fontWeight: 600, flex: 1, marginRight: '1rem' }}
-                  >
-                    {attempt.tests?.title}
-                  </motion.span>
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    style={{
-                      color: attempt.score >= 0 ? 'var(--success)' : 'var(--danger)',
-                      fontWeight: 700,
-                      fontSize: '1.1rem',
-                      background: attempt.score >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '6px',
-                      border: `1px solid ${attempt.score >= 0 ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`
-                    }}
-                  >
-                    {attempt.score}
-                  </motion.div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.9rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.tests?.title}</span>
+                  <span style={{ color: (a.score || 0) >= 0 ? 'var(--success)' : 'var(--danger)', fontWeight: 700 }}>{a.score}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  <span>{new Date(attempt.submitted_at).toLocaleDateString()} • {Math.floor(attempt.time_taken / 60)}m {attempt.time_taken % 60}s</span>
-                  <motion.span
-                    whileHover={{ color: 'var(--primary)' }}
-                    style={{ display: 'flex', alignItems: 'center', color: 'var(--primary)' }}
-                  >
-                    View <ChevronRight size={14} />
-                  </motion.span>
-                </div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{new Date(a.submitted_at).toLocaleDateString()}</p>
               </motion.div>
-            )) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', padding: '2rem' }}
-              >
-                <motion.div
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <History size={48} style={{ marginBottom: '1rem', opacity: 0.5, color: 'var(--secondary)' }} />
-                </motion.div>
-                <p style={{ margin: 0 }}>No attempts yet. Start a test to see your results here!</p>
-                <p style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>Your progress will appear here after your first attempt. 📈</p>
-              </motion.div>
-            )}
-          </motion.div>
+            )) : <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1rem' }}>No attempts yet.</p>}
+          </div>
         </section>
       </div>
+
+      {/* Advanced Battle Modal */}
+      <AnimatePresence>
+        {showBattleModal && (
+          <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem' }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowBattleModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }} />
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="glass" style={{ width: '100%', maxWidth: '500px', padding: '2rem', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}>
+              <button onClick={() => setShowBattleModal(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={24} /></button>
+              <h2 style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Settings2 /> Battle Settings</h2>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Subject</label>
+                  <select value={battleConfig.subject} onChange={(e) => setBattleConfig({...battleConfig, subject: e.target.value})} style={{ padding: '0.8rem', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--glass-border)' }}>
+                    {subjects.map(s => <option key={s} value={s} style={{ background: '#1e293b' }}>{s}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Chapter Name</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Chapter 1: Introduction, Algebra Basics..." 
+                    value={battleConfig.chapter} 
+                    onChange={(e) => setBattleConfig({...battleConfig, chapter: e.target.value})} 
+                    style={{ padding: '0.8rem', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--glass-border)', outline: 'none' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Topic Name</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Newton's Laws, Trigonometry..." 
+                    value={battleConfig.topic} 
+                    onChange={(e) => setBattleConfig({...battleConfig, topic: e.target.value})} 
+                    style={{ padding: '0.8rem', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--glass-border)', outline: 'none' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Questions ({battleConfig.question_count})</label>
+                    <input type="range" min="5" max="50" step="5" value={battleConfig.question_count} onChange={(e) => setBattleConfig({...battleConfig, question_count: parseInt(e.target.value)})} style={{ width: '100%', accentColor: 'var(--primary)' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Time ({battleConfig.time_limit}s)</label>
+                    <input type="range" min="30" max="600" step="30" value={battleConfig.time_limit} onChange={(e) => setBattleConfig({...battleConfig, time_limit: parseInt(e.target.value)})} style={{ width: '100%', accentColor: 'var(--secondary)' }} />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Difficulty</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                    {['Easy', 'Medium', 'Hard'].map(d => (
+                      <button key={d} onClick={() => setBattleConfig({...battleConfig, difficulty: d})} style={{ padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: battleConfig.difficulty === d ? 'var(--secondary)' : 'transparent', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}>{d}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <button onClick={startBattle} disabled={creatingBattle} style={{ padding: '1rem', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer', marginTop: '1rem', boxShadow: '0 10px 20px rgba(0,0,0,0.2)' }}>
+                  {creatingBattle ? 'Creating Custom Room...' : 'Start Battle ⚔️'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

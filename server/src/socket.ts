@@ -61,6 +61,28 @@ export const initSocket = (httpServer: HttpServer) => {
     socket.on('disconnect', () => {
       console.log('User disconnected:', socket.id);
     });
+
+    // Battle specific events
+    socket.on('join-battle', (data) => {
+      const { battleId, userId, userName } = data;
+      socket.join(battleId);
+      console.log(`User ${userName} (${userId}) joined battle room ${battleId}`);
+      socket.to(battleId).emit('opponent-joined', { userId, userName });
+    });
+
+    socket.on('battle-ready', (battleId) => {
+      io.to(battleId).emit('start-battle');
+    });
+
+    socket.on('send-answer', (data) => {
+      const { battleId, userId, score, questionIndex } = data;
+      socket.to(battleId).emit('opponent-answer', { userId, score, questionIndex });
+    });
+
+    socket.on('end-battle', (data) => {
+      const { battleId, winnerId } = data;
+      io.to(battleId).emit('battle-over', { winnerId });
+    });
   });
 
 

@@ -37,7 +37,7 @@ const Login: React.FC = () => {
         style={{ padding: '3rem', width: '100%', maxWidth: '450px' }}
       >
         <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', textAlign: 'center' }}>Student Login</h2>
-        <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: '2.5rem' }}>Access your dashboard and tests</p>
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: '2.5rem' }}>Enter the arena and resume your progress</p>
 
         {error && <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '10px', marginBottom: '1.5rem', fontSize: '0.9rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{error}</div>}
 

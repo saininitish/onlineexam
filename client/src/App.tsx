@@ -18,6 +18,7 @@ const Analytics = lazy(() => import('./pages/AnalyticsShared'));
 const TestEngine = lazy(() => import('./pages/TestEngine'));
 const ResultPage = lazy(() => import('./pages/ResultPage'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const BattleArena = lazy(() => import('./pages/student/BattleArena'));
 
 // Public Layout (Navbar + Content)
 const PublicLayout = () => (
@@ -80,6 +81,10 @@ const App: React.FC = () => {
           <Route 
             path="/test/:id" 
             element={user ? <TestEngine /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/battle/:battleId" 
+            element={user ? <BattleArena /> : <Navigate to="/login" />} 
           />
           
           <Route element={user?.role === 'admin' ? <AdminLayout /> : <StudentLayout />}>
