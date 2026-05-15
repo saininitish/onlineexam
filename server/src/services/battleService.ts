@@ -183,6 +183,8 @@ export class BattleService {
   }
 
   static async deleteBattle(battleId: string, userId: string) {
+    console.log(`[BattleService] Attempting to delete battle: ${battleId} by user: ${userId}`);
+    
     // Ensure the battle belongs to the user (either p1 or p2)
     const { data: battle, error: fetchError } = await supabase
       .from('battles')
@@ -190,24 +192,39 @@ export class BattleService {
       .eq('id', battleId)
       .single();
     
-    if (fetchError || !battle) throw new AppError('Battle not found', 404);
+    if (fetchError || !battle) {
+      console.error('[BattleService] Battle not found:', battleId);
+      throw new AppError('Battle not found', 404);
+    }
+
     if (battle.player1 !== userId && battle.player2 !== userId) {
+      console.warn('[BattleService] Unauthorized delete attempt:', { battleId, userId });
       throw new AppError('Not authorized to delete this battle', 403);
     }
 
+    // 1. Delete associated answers first (Foreign Key constraint)
     const { error: ansError } = await supabase
       .from('battle_answers')
       .delete()
       .eq('battle_id', battleId);
     
-    if (ansError) throw new AppError(ansError.message, 500);
+    if (ansError) {
+      console.error('[BattleService] Error deleting answers:', ansError);
+      throw new AppError('Failed to delete battle answers: ' + ansError.message, 500);
+    }
 
+    // 2. Delete the battle record
     const { error } = await supabase
       .from('battles')
       .delete()
       .eq('id', battleId);
     
-    if (error) throw new AppError(error.message, 500);
+    if (error) {
+      console.error('[BattleService] Error deleting battle:', error);
+      throw new AppError('Failed to delete battle: ' + error.message, 500);
+    }
+
+    console.log(`[BattleService] Successfully deleted battle: ${battleId}`);
     return { success: true };
   }
 }
