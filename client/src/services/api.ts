@@ -1,6 +1,7 @@
 import axios, { type AxiosRequestHeaders } from 'axios';
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_URL = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl.replace(/\/$/, '')}/api`;
 
 if (import.meta.env.PROD) {
   console.log('🌐 App running in PRODUCTION mode');
