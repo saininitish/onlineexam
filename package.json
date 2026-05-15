@@ -5,8 +5,7 @@
   "scripts": {
     "install-all": "npm install && cd server && npm install && cd ../client && npm install",
     "install-server": "cd server && npm install",
-    "build": "cd server && npm install && npm run build",
-    "build-server": "cd server && npm install && npm run build",
-    "start": "cd server && npm start"
+    "build": "cd server && npm install && npm run build && ls -R dist",
+    "start": "node server/dist/server.js"
   }
 }
