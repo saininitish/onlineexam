@@ -31,79 +31,64 @@ const Register: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '70vh' }}>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="glass" 
+        className="glass"
         style={{ padding: '3rem', width: '100%', maxWidth: '450px' }}
       >
-        <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', textAlign: 'center' }}>Create Account</h2>
-        <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: '2.5rem' }}>Join Myra Chappy and start practicing</p>
+        <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', textAlign: 'center' }}>Student Signup</h2>
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: '2.5rem' }}>Join Exam Prep Battle and start winning</p>
 
         {error && <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '1rem', borderRadius: '10px', marginBottom: '1.5rem', fontSize: '0.9rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ position: 'relative' }}>
             <User size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input 
-              type="text" 
-              placeholder="Full Name" 
+            <input
+              type="text"
+              placeholder="Full Name"
               value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
               style={{ width: '100%', background: 'var(--glass)', border: '1px solid var(--glass-border)', padding: '1rem 1rem 1rem 3rem', borderRadius: '12px', color: 'white', fontSize: '1rem' }}
             />
           </div>
           <div style={{ position: 'relative' }}>
             <Mail size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input 
-              type="email" 
-              placeholder="Email Address" 
+            <input
+              type="email"
+              placeholder="Email Address"
               value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
               style={{ width: '100%', background: 'var(--glass)', border: '1px solid var(--glass-border)', padding: '1rem 1rem 1rem 3rem', borderRadius: '12px', color: 'white', fontSize: '1rem' }}
             />
           </div>
           <div style={{ position: 'relative' }}>
             <Lock size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input 
-              type="password" 
-              placeholder="Password" 
+            <input
+              type="password"
+              placeholder="Password"
               value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
               style={{ width: '100%', background: 'var(--glass)', border: '1px solid var(--glass-border)', padding: '1rem 1rem 1rem 3rem', borderRadius: '12px', color: 'white', fontSize: '1rem' }}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button 
-              type="button"
-              onClick={() => setFormData({...formData, role: 'student'})}
-              style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', background: formData.role === 'student' ? 'var(--primary)' : 'var(--glass)', border: '1px solid var(--glass-border)', color: 'white' }}
-            >
-              Student
-            </button>
-            <button 
-              type="button"
-              onClick={() => setFormData({...formData, role: 'admin'})}
-              style={{ flex: 1, padding: '0.75rem', borderRadius: '10px', background: formData.role === 'admin' ? 'var(--primary)' : 'var(--glass)', border: '1px solid var(--glass-border)', color: 'white' }}
-            >
-              Admin
-            </button>
-          </div>
-          
-          <button 
-            type="submit" 
+
+
+          <button
+            type="submit"
             disabled={loading}
-            style={{ 
-              background: 'var(--primary)', 
-              color: 'white', 
-              padding: '1rem', 
-              borderRadius: '12px', 
-              fontWeight: 700, 
-              fontSize: '1rem', 
+            style={{
+              background: 'var(--primary)',
+              color: 'white',
+              padding: '1rem',
+              borderRadius: '12px',
+              fontWeight: 700,
+              fontSize: '1rem',
               marginTop: '1rem',
               display: 'flex',
               alignItems: 'center',
@@ -119,6 +104,11 @@ const Register: React.FC = () => {
         <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
           Already have an account? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>Login</Link>
         </p>
+        <div style={{ textAlign: 'center', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
+          <Link to="/admin/register" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'none' }}>
+            Need an Administrator account? <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign up here</span>
+          </Link>
+        </div>
       </motion.div>
     </div>
   );

@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  BarChart3, 
-  Trophy, 
+import {
+  LayoutDashboard,
+  BookOpen,
+  BarChart3,
+  Trophy,
   LogOut,
   ChevronRight,
   User,

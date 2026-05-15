@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, List, BarChart3, X, Trash2, FileQuestion, Eye, Trophy, Edit3, Search, Play, Upload, FileSpreadsheet, FileText, Table2 } from 'lucide-react';
-import api from '../services/api';
-import { serializeQuestion, parseQuestion } from '../utils/questionMeta';
+import { Plus, List, BarChart3, X, Trash2, FileQuestion, Eye, Trophy, Edit3, Search, Play, Upload, FileSpreadsheet, FileText, Table2, Radio } from 'lucide-react';
+import { LiveProctoring } from '../../components/admin/LiveProctoring';
+
+import api from '../../services/api';
+import { serializeQuestion, parseQuestion } from '../../utils/questionMeta';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '0.75rem', borderRadius: '10px',
@@ -94,7 +96,8 @@ function parseBulkQuestions(raw: string): BulkQuestionRow[] {
       const option_b = String(q.option_b ?? '').trim();
       const option_c = String(q.option_c ?? '').trim();
       const option_d = String(q.option_d ?? '').trim();
-      const correct_answer = String(q.correct_answer ?? '').trim().toLowerCase();
+      const correct_raw = q.correct_answer || q.correct_answers || '';
+      const correct_answer = String(correct_raw).trim().toLowerCase();
       if (!question || !option_a || !option_b || !option_c || !option_d) {
         throw new Error(`JSON row ${idx + 1}: question aur chaaron options zaroori hain.`);
       }
@@ -148,7 +151,8 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [tests, setTests] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'tests' | 'results'>('tests');
+  const [activeTab, setActiveTab] = useState<'tests' | 'results' | 'monitor'>('tests');
+
 
   // Create/Edit Test Modal
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
@@ -173,6 +177,7 @@ const AdminDashboard: React.FC = () => {
   });
   const [savingQuestion, setSavingQuestion] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [bulkRaw, setBulkRaw] = useState('');
@@ -276,8 +281,9 @@ const AdminDashboard: React.FC = () => {
       setIsQuestionOpen(false);
       fetchQuestions(selectedTest.id);
       setTimeout(() => setSuccessMsg(''), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save question', err);
+      setErrorMsg(err?.response?.data?.message || 'Failed to save question');
     } finally {
       setSavingQuestion(false);
     }
@@ -388,11 +394,11 @@ const AdminDashboard: React.FC = () => {
         test_id: selectedTest.id,
         questions: rows
       });
-      setSuccessMsg(`${data.inserted} questions bulk mein add ho gaye!`);
+      setSuccessMsg(data.message || `${data.inserted} questions bulk mein add ho gaye!`);
       setBulkRaw('');
       setIsBulkOpen(false);
       fetchQuestions(selectedTest.id);
-      setTimeout(() => setSuccessMsg(''), 4000);
+      setTimeout(() => setSuccessMsg(''), 6000);
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||
@@ -506,19 +512,20 @@ const AdminDashboard: React.FC = () => {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        {(['tests', 'results'] as const).map(tab => (
+        {(['tests', 'results', 'monitor'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => { setActiveTab(tab); setSelectedTest(null); }}
             style={{
               padding: '0.75rem 2rem', borderRadius: '10px',
               background: activeTab === tab ? 'var(--glass)' : 'transparent',
-              color: activeTab === tab ? (tab === 'tests' ? 'var(--primary)' : 'var(--secondary)') : 'var(--text-muted)',
+              color: activeTab === tab ? (tab === 'tests' ? 'var(--primary)' : tab === 'monitor' ? 'var(--danger)' : 'var(--secondary)') : 'var(--text-muted)',
               fontWeight: 600,
-              border: activeTab === tab ? `1px solid ${tab === 'tests' ? 'var(--primary)' : 'var(--secondary)'}` : '1px solid transparent'
+              border: activeTab === tab ? `1px solid ${tab === 'tests' ? 'var(--primary)' : tab === 'monitor' ? 'var(--danger)' : 'var(--secondary)'}` : '1px solid transparent'
             }}
           >
             {tab === 'tests' ? <><List size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} /> Tests ({tests.length})</> :
+             tab === 'monitor' ? <><Radio size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} /> Live Monitor</> :
               <><BarChart3 size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} /> Results ({results.length})</>}
           </button>
         ))}
@@ -608,14 +615,19 @@ const AdminDashboard: React.FC = () => {
                 <p>No tests yet.</p>
               </div>
             )
+          ) : activeTab === 'monitor' ? (
+            <LiveProctoring roomId="global-proctor-room" />
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
                   <th style={{ padding: '1rem' }}>Student</th>
                   <th style={{ padding: '1rem' }}>Test</th>
                   <th style={{ padding: '1rem' }}>Score</th>
                   <th style={{ padding: '1rem' }}>Time</th>
+                  <th style={{ padding: '1rem' }}>Cheating</th>
+                  <th style={{ padding: '1rem' }}>Max Time Q</th>
                   <th style={{ padding: '1rem' }}>Date</th>
                   <th style={{ padding: '1rem' }}>Action</th>
                 </tr>
@@ -627,6 +639,38 @@ const AdminDashboard: React.FC = () => {
                     <td style={{ padding: '1rem' }}>{res.tests?.title || 'N/A'}</td>
                     <td style={{ padding: '1rem', fontWeight: 700, color: res.score >= 0 ? 'var(--success)' : 'var(--danger)' }}>{res.score}</td>
                     <td style={{ padding: '1rem' }}>{Math.floor(res.time_taken / 60)}m {res.time_taken % 60}s</td>
+                    <td style={{ padding: '1rem' }}>
+                       {res.tab_switches > 0 || res.fullscreen_exits > 0 ? (
+                         <span style={{ color: 'var(--danger)', fontSize: '0.8rem', fontWeight: 600 }}>
+                           ⚠️ {res.tab_switches} Tabs | {res.fullscreen_exits} FS
+                         </span>
+                       ) : (
+                         <span style={{ color: 'var(--success)', fontSize: '0.8rem' }}>Clean</span>
+                       )}
+                    </td>
+                    <td style={{ padding: '1rem' }}>
+                      {(() => {
+                        let map = res.time_spent_map;
+                        if (typeof map === 'string') {
+                          try { map = JSON.parse(map); } catch { map = null; }
+                        }
+                        
+                        if (map && typeof map === 'object' && Object.keys(map).length > 0) {
+                          const entries = Object.entries(map as Record<string, number>);
+                          const maxEntry = entries.reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
+                          
+                          if (maxEntry[1] > 0) {
+                            return (
+                              <div style={{ fontSize: '0.8rem' }}>
+                                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{Math.round(maxEntry[1])}s</span>
+                                <span style={{ color: 'var(--text-muted)', marginLeft: '4px' }}>on Q-{maxEntry[0].slice(-4)}</span>
+                              </div>
+                            );
+                          }
+                        }
+                        return <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>No data yet</span>;
+                      })()}
+                    </td>
                     <td style={{ padding: '1rem' }}>{new Date(res.submitted_at).toLocaleDateString()}</td>
                     <td style={{ padding: '1rem' }}>
                       <button
@@ -667,7 +711,8 @@ const AdminDashboard: React.FC = () => {
                         id: '', question: '', question_hi: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'a',
                         topic: '', difficulty: 'Medium', chapter: ''
                       });
-                    setIsQuestionOpen(true);
+                      setErrorMsg('');
+                      setIsQuestionOpen(true);
                   }}
                   style={{ background: 'var(--success)', color: 'white', padding: '0.5rem 1rem', borderRadius: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', border: 'none', cursor: 'pointer' }}
                 >
@@ -690,6 +735,7 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             {successMsg && <div style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', padding: '0.75rem', borderRadius: '10px', marginBottom: '1rem', fontSize: '0.85rem', border: '1px solid rgba(16,185,129,0.2)' }}>{successMsg}</div>}
+            {errorMsg && <div style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '10px', marginBottom: '1rem', fontSize: '0.85rem', border: '1px solid rgba(239,68,68,0.2)' }}>{errorMsg}</div>}
 
             {questionsLoading ? <p>Loading...</p> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -750,17 +796,17 @@ const AdminDashboard: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
                     <label style={labelStyle}>Duration (mins)</label>
-                    <input type="number" required value={testForm.duration || ''} onChange={e => setTestForm({ ...testForm, duration: Number(e.target.value) })} style={inputStyle} />
+                    <input type="number" required value={testForm.duration ?? ''} onChange={e => setTestForm({ ...testForm, duration: Number(e.target.value) })} style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Marks/Q</label>
-                    <input type="number" required value={testForm.marks_per_question || ''} onChange={e => setTestForm({ ...testForm, marks_per_question: Number(e.target.value) })} style={inputStyle} />
+                    <input type="number" required step="any" value={testForm.marks_per_question ?? ''} onChange={e => setTestForm({ ...testForm, marks_per_question: Number(e.target.value) })} style={inputStyle} />
                   </div>
                 </div>
-                  <div>
-                    <label style={labelStyle}>Negative Mark</label>
-                    <input type="number" required step="1" value={testForm.negative_mark || ''} onChange={e => setTestForm({ ...testForm, negative_mark: Math.floor(Number(e.target.value)) })} style={inputStyle} />
-                  </div>
+                <div>
+                  <label style={labelStyle}>Negative Mark</label>
+                  <input type="number" required step="any" value={testForm.negative_mark ?? ''} onChange={e => setTestForm({ ...testForm, negative_mark: Number(e.target.value) })} style={inputStyle} />
+                </div>
                 <button type="submit" disabled={testLoading} style={{ background: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '12px', fontWeight: 700 }}>
                   {testLoading ? 'Saving...' : 'Save Test'}
                 </button>
@@ -835,6 +881,7 @@ const AdminDashboard: React.FC = () => {
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass" style={{ width: '100%', maxWidth: '600px', padding: '2.5rem', position: 'relative' }}>
               <button onClick={() => setIsQuestionOpen(false)} style={{ position: 'absolute', right: '1.5rem', top: '1.5rem', color: 'var(--text-muted)' }}><X size={24} /></button>
               <h2 style={{ marginBottom: '1.5rem' }}>{questionForm.id ? 'Edit Question' : 'Add Question'}</h2>
+              {errorMsg && <div style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', padding: '0.75rem', borderRadius: '10px', marginBottom: '1rem', fontSize: '0.85rem', border: '1px solid rgba(239,68,68,0.2)' }}>{errorMsg}</div>}
               <form onSubmit={handleSaveQuestion} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <textarea required value={questionForm.question} onChange={e => setQuestionForm({ ...questionForm, question: e.target.value })} rows={3} style={inputStyle} placeholder="Question (English)..." />
@@ -884,9 +931,9 @@ const AdminDashboard: React.FC = () => {
                   <div><label style={labelStyle}>Chapter (Optional filter)</label><input type="text" value={generateForm.chapter} onChange={e => setGenerateForm({ ...generateForm, chapter: e.target.value })} style={inputStyle} /></div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                  <div><label style={labelStyle}>Duration (mins)</label><input required type="number" min="1" value={generateForm.duration || ''} onChange={e => setGenerateForm({ ...generateForm, duration: Number(e.target.value) })} style={inputStyle} /></div>
-                  <div><label style={labelStyle}>Marks / Q</label><input required type="number" min="1" value={generateForm.marks_per_question || ''} onChange={e => setGenerateForm({ ...generateForm, marks_per_question: Number(e.target.value) })} style={inputStyle} /></div>
-                  <div><label style={labelStyle}>Negative</label><input required type="number" min="0" step="1" value={generateForm.negative_mark || ''} onChange={e => setGenerateForm({ ...generateForm, negative_mark: Math.floor(Number(e.target.value)) })} style={inputStyle} /></div>
+                  <div><label style={labelStyle}>Duration (mins)</label><input required type="number" min="1" value={generateForm.duration ?? ''} onChange={e => setGenerateForm({ ...generateForm, duration: Number(e.target.value) })} style={inputStyle} /></div>
+                  <div><label style={labelStyle}>Marks / Q</label><input required type="number" min="0" step="any" value={generateForm.marks_per_question ?? ''} onChange={e => setGenerateForm({ ...generateForm, marks_per_question: Number(e.target.value) })} style={inputStyle} /></div>
+                  <div><label style={labelStyle}>Negative</label><input required type="number" min="0" step="any" value={generateForm.negative_mark ?? ''} onChange={e => setGenerateForm({ ...generateForm, negative_mark: Number(e.target.value) })} style={inputStyle} /></div>
                 </div>
 
                 <button type="submit" disabled={generating} style={{ background: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '12px', fontWeight: 700, marginTop: '1rem' }}>

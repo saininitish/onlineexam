@@ -2,56 +2,83 @@ import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import v1Router from './routes/v1.js';
-import { handleError, AppError } from './utils/errorHandler.js';
-import { rateLimit } from 'express-rate-limit';
+import { handleError } from './utils/errorHandler.js';
 dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 5000;
-// Rate Limiting
-const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    standardHeaders: true,
-    legacyHeaders: false,
+const httpServer = createServer(app);
+// 1. Socket.io Setup (Standard Pattern)
+const io = new Server(httpServer, {
+    cors: {
+        origin: "*", // Fully open for debugging
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    transports: ['polling', 'websocket']
 });
-const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+io.on('connection', (socket) => {
+    console.log('✅ User connected to socket:', socket.id);
+    socket.on('student-ready', (data) => {
+        const { roomId } = data;
+        socket.join(roomId);
+        io.to(roomId).emit('student-joined', socket.id);
+    });
+    socket.on('admin-join', (roomId) => {
+        socket.join(roomId);
+        socket.to(roomId).emit('discovery-request');
+    });
+    socket.on('signal', (data) => {
+        io.to(data.to).emit('signal', {
+            from: socket.id,
+            signal: data.signal,
+            type: data.type
+        });
+    });
+    socket.on('request-stream', (data) => {
+        io.to(data.studentId).emit('request-stream', {
+            adminId: socket.id
+        });
+    });
+    socket.on('disconnect', () => {
+        console.log('❌ User disconnected');
+    });
+});
+// 2. Express Middleware
 app.use(cors({
-    origin: [frontendUrl, 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:3000'],
+    origin: (origin, callback) => callback(null, true),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 app.use(compression());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10000, // Increased for bulk uploads
-    standardHeaders: true,
-    legacyHeaders: false,
-}));
 app.use((req, res, next) => {
-    if (req.method === 'GET') {
-        res.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=30');
-    }
+    const startedAt = Date.now();
+    console.log(`[REQ] ${req.method} ${req.url}`);
+    res.on('finish', () => {
+        console.log(`[RES] ${req.method} ${req.url} ${res.statusCode} ${Date.now() - startedAt}ms`);
+    });
     next();
 });
-// Routes
+// 3. Routes
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
 app.use('/api/v1', v1Router);
-// Fallback for older API calls (Optional but good for migration)
 app.use('/api', v1Router);
 app.get('/', (req, res) => {
     res.send('MockMaster Scalable API v1 is running...');
 });
-// 404 Handler
-app.use((req, res, next) => {
-    next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
-});
-// Global Error Handler
+// 4. Error Handling (Moved after routes)
 app.use((err, req, res, next) => {
     handleError(err, res);
 });
-app.listen(PORT, () => {
-    console.log(`🚀 Server scaled and running on port ${PORT}`);
+// 5. Start Server
+const PORT = Number(process.env.PORT) || 5000;
+httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log('✅ Socket.io initialized and bound to httpServer');
 });

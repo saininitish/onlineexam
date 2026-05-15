@@ -1,42 +1,42 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Trophy, Clock, ShieldCheck } from 'lucide-react';
+import { Swords, Trophy, Zap, ShieldCheck } from 'lucide-react';
 
 const Home: React.FC = () => {
   const features = [
-    { icon: <Clock className="text-primary" />, title: 'Real-time Timer', desc: 'Simulate actual exam conditions with our precise test engine.' },
-    { icon: <Trophy className="text-secondary" />, title: 'Detailed Results', desc: 'Get instant feedback and comprehensive performance analytics.' },
-    { icon: <ShieldCheck className="text-accent" />, title: 'Secure Platform', desc: 'Integrated anti-cheat measures and secure login systems.' },
-    { icon: <BookOpen className="text-success" />, title: 'Diverse Tests', desc: 'Access a wide range of mock tests across various subjects.' },
+    { icon: <Zap className="text-primary" />, title: 'Real-time Battles', desc: 'Compete with friends or random players in real-time quiz battles.' },
+    { icon: <Trophy className="text-secondary" />, title: 'Win Rewards', desc: 'Earn points, maintain streaks, and climb the global leaderboard.' },
+    { icon: <ShieldCheck className="text-accent" />, title: 'AI Powered', desc: 'Get personalized AI-generated questions and detailed explanations.' },
+    { icon: <Swords className="text-success" />, title: 'Study Mode', desc: 'Transform boring study sessions into engaging game sessions.' },
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '5rem' }}>
       {/* Hero Section */}
       <section style={{ textAlign: 'center', padding: '4rem 0' }}>
-        <motion.h1 
+        <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          style={{ fontSize: '4rem', marginBottom: '1.5rem', lineHeight: 1.1 }}
+          style={{ fontSize: '4.5rem', marginBottom: '1.5rem', lineHeight: 1.1, fontWeight: 900 }}
         >
-          Master Your Exams <br />
+          Study Ko Game Banaao <br />
           with <span style={{ background: 'linear-gradient(90deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Myra Chappy
+            Exam Prep Battle
           </span>
         </motion.h1>
-        
-        <motion.p 
+
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          style={{ fontSize: '1.25rem', color: 'var(--text-muted)', maxWidth: '700px', margin: '0 auto 2.5rem' }}
+          style={{ fontSize: '1.4rem', color: 'var(--text-muted)', maxWidth: '800px', margin: '0 auto 2.5rem' }}
         >
-          The ultimate platform for online mock tests. Practice, analyze, and improve your scores with our real-world exam simulation engine.
+          The ultimate gamified learning platform. Join the arena, compete with peers, and master your exams through high-stakes quiz battles.
         </motion.p>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
@@ -54,10 +54,10 @@ const Home: React.FC = () => {
       {/* Features Grid */}
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
         {features.map((f, i) => (
-          <motion.div 
+          <motion.div
             key={i}
             whileHover={{ y: -5 }}
-            className="glass" 
+            className="glass"
             style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
           >
             <div style={{ background: 'var(--glass)', width: '50px', height: '50px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

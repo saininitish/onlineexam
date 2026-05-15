@@ -4,8 +4,8 @@ services:
     env: node
     plan: free
     region: ohio
-    buildCommand: cd server && npm install && npm run build
-    startCommand: cd server && npm start
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -21,3 +21,5 @@ services:
         generateValue: true
       - key: REFRESH_SECRET
         generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
