@@ -2,7 +2,7 @@ import { supabase } from '../config/supabase.js';
 import { AppError } from '../utils/errorHandler.js';
 
 export class BattleService {
-  static async findAndJoinBattle(userId: string, subject: string, chapter: string, topic: string, difficulty: string = 'Medium', timeLimit: number = 60, questionCount: number = 5) {
+  static async findAndJoinBattle(userId: string, subject: string, chapter: string, topic: string, difficulty: string = 'Medium', timeLimit: number = 60, questionCount: number = 5, context: string = '', standard: string = 'UG Level') {
     // Look for a pending battle with matching criteria
     const { data: existingBattle, error } = await supabase
       .from('battles')
@@ -12,6 +12,7 @@ export class BattleService {
       .eq('chapter', chapter)
       .eq('topic', topic)
       .eq('difficulty', difficulty)
+      .eq('standard', standard)
       .eq('time_limit', timeLimit)
       .eq('question_count', questionCount)
       .neq('player1', userId)
@@ -21,11 +22,11 @@ export class BattleService {
     if (existingBattle) {
       return this.joinBattle(existingBattle.id, userId);
     } else {
-      return this.createBattle(userId, subject, chapter, topic, difficulty, timeLimit, questionCount);
+      return this.createBattle(userId, subject, chapter, topic, difficulty, timeLimit, questionCount, context, standard);
     }
   }
 
-  static async createBattle(userId: string, subject: string, chapter: string, topic: string, difficulty: string = 'Medium', timeLimit: number = 60, questionCount: number = 5) {
+  static async createBattle(userId: string, subject: string, chapter: string, topic: string, difficulty: string = 'Medium', timeLimit: number = 60, questionCount: number = 5, context: string = '', standard: string = 'UG Level') {
     const { data, error } = await supabase
       .from('battles')
       .insert([{ 
@@ -34,9 +35,11 @@ export class BattleService {
         chapter,
         topic, 
         difficulty,
+        standard,
         time_limit: timeLimit,
         question_count: questionCount,
-        status: 'pending' 
+        status: 'pending',
+        context
       }])
       .select()
       .single();
@@ -128,5 +131,54 @@ export class BattleService {
     }
 
     return { success: true };
+  }
+  static async getBattleHistory(userId: string, limit: number = 5) {
+    const { data, error } = await supabase
+      .from('battles')
+      .select(`
+        *,
+        p1:player1(name),
+        p2:player2(name)
+      `)
+      .or(`player1.eq.${userId},player2.eq.${userId}`)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw new AppError(error.message, 500);
+    return data;
+  }
+
+  static async saveQuestions(battleId: string, questions: any[]) {
+    const { error } = await supabase
+      .from('battles')
+      .update({ questions })
+      .eq('id', battleId);
+    
+    if (error) throw new AppError(error.message, 500);
+    return { success: true };
+  }
+
+  static async getBattleAnalysis(battleId: string) {
+    const { data: battle, error: bError } = await supabase
+      .from('battles')
+      .select(`
+        *,
+        p1:player1(name),
+        p2:player2(name)
+      `)
+      .eq('id', battleId)
+      .single();
+
+    if (bError) throw new AppError(bError.message, 500);
+
+    const { data: answers, error: aError } = await supabase
+      .from('battle_answers')
+      .select('*')
+      .eq('battle_id', battleId);
+
+    if (aError) throw new AppError(aError.message, 500);
+
+    return { ...battle, answers };
   }
 }

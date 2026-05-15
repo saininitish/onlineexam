@@ -486,6 +486,10 @@ const TestEngine: React.FC = () => {
           .test-engine-grid { grid-template-columns: 1fr !important; }
           .test-engine-sidebar { position: static !important; width: 100% !important; }
         }
+        .navigation-grid::-webkit-scrollbar { width: 4px; }
+        .navigation-grid::-webkit-scrollbar-track { background: transparent; }
+        .navigation-grid::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        .navigation-grid::-webkit-scrollbar-thumb:hover { background: var(--primary); }
       `}</style>
 
       {/* Top Professional Header */}
@@ -1169,8 +1173,12 @@ const TestEngine: React.FC = () => {
               background: 'var(--glass)',
               padding: '1rem',
               borderRadius: '12px',
-              border: '1px solid var(--glass-border)'
+              border: '1px solid var(--glass-border)',
+              maxHeight: '400px',
+              overflowY: 'auto',
+              paddingRight: '8px'
             }}
+            className="navigation-grid"
           >
             {test.questions.map((q: any, i: number) => {
               const isAnswered = answers.some(a => a.question_id === q.id);

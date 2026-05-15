@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { History, Clock, FileText, Trophy, X, Zap, Swords, Settings2, RefreshCw } from 'lucide-react';
+import { History, Clock, FileText, Trophy, X, Zap, Swords, Settings2, RefreshCw, Database } from 'lucide-react';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
@@ -11,6 +11,7 @@ const Dashboard: React.FC = () => {
   const [userStats, setUserStats] = useState<any>({ xp: 0, coins: 0, streak: 0 });
   const [loading, setLoading] = useState(true);
   const [showBattleModal, setShowBattleModal] = useState(false);
+  const [battleHistory, setBattleHistory] = useState<any[]>([]);
   
   const [battleConfig, setBattleConfig] = useState({ 
     subject: 'Mathematics', 
@@ -18,30 +19,63 @@ const Dashboard: React.FC = () => {
     topic: '', 
     difficulty: 'Medium',
     time_limit: 60,
-    question_count: 5
+    question_count: 5,
+    context: '',
+    standard: 'UG Level'
   });
+  const [syllabusData, setSyllabusData] = useState<{
+    subjects: string[],
+    chapters: string[],
+    topics: {topic: string, description: string}[]
+  }>({ subjects: [], chapters: [], topics: [] });
+
   const [creatingBattle, setCreatingBattle] = useState(false);
 
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
-  const subjects = ['Mathematics', 'Science', 'History', 'Geography', 'English', 'General Knowledge', 'Other'];
+  const baseSubjects = ['Mathematics', 'Science', 'History', 'Geography', 'English', 'General Knowledge', 'Other'];
+  const allSubjects = [...new Set([...baseSubjects, ...syllabusData.subjects])];
+
+  // Fetch syllabus data
+  useEffect(() => {
+    api.get('/syllabus/subjects').then(res => setSyllabusData(prev => ({ ...prev, subjects: res.data || [] })));
+  }, []);
+
+  useEffect(() => {
+    if (syllabusData.subjects.includes(battleConfig.subject)) {
+      api.get(`/syllabus/chapters?subject=${battleConfig.subject}`).then(res => setSyllabusData(prev => ({ ...prev, chapters: res.data || [] })));
+    } else {
+      setSyllabusData(prev => ({ ...prev, chapters: [], topics: [] }));
+    }
+  }, [battleConfig.subject, syllabusData.subjects]);
+
+  useEffect(() => {
+    if (battleConfig.chapter && syllabusData.chapters.includes(battleConfig.chapter)) {
+      api.get(`/syllabus/topics?subject=${battleConfig.subject}&chapter=${battleConfig.chapter}`).then(res => {
+        setSyllabusData(prev => ({ ...prev, topics: res.data || [] }));
+      });
+    } else {
+      setSyllabusData(prev => ({ ...prev, topics: [] }));
+    }
+  }, [battleConfig.chapter, battleConfig.subject, syllabusData.chapters]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      console.log('[Dashboard] Fetching data...');
-      const [dashRes, attemptsRes] = await Promise.all([
+      const [dashRes, attemptsRes, battleRes] = await Promise.all([
         api.get('/student/dashboard'),
-        api.get('/student/attempts')
+        api.get('/student/attempts'),
+        api.get('/battle/history')
       ]);
       
-      console.log('[Dashboard] Data received:', { dash: dashRes.data, attempts: attemptsRes.data });
+      console.log('[Dashboard] Data received:', { dash: dashRes.data, attempts: attemptsRes.data, battles: battleRes.data });
       
       const dashData = dashRes.data || {};
       setTests(dashData.tests || []);
       setUserStats(dashData.stats || { xp: 0, coins: 0, streak: 0 });
       setAttempts(attemptsRes.data || []);
+      setBattleHistory(battleRes.data || []);
     } catch (err) {
       console.error('[Dashboard] Fetch Error:', err);
     } finally {
@@ -68,6 +102,16 @@ const Dashboard: React.FC = () => {
       setCreatingBattle(false);
       setShowBattleModal(false);
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setBattleConfig({ ...battleConfig, context: event.target?.result as string });
+    };
+    reader.readAsText(file);
   };
 
   const getTestAttemptInfo = (testId: string) => {
@@ -181,14 +225,57 @@ const Dashboard: React.FC = () => {
         </section>
 
         {/* Sidebar: Recent */}
-        <section>
-          <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}><History color="var(--secondary)" /> Recent History</h2>
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Battle History */}
+          <section>
+            <h2 style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.4rem' }}>
+              <Swords color="var(--secondary)" size={24} /> Recent Battles
+            </h2>
+            <div className="glass" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid rgba(236,72,153,0.2)' }}>
+              {battleHistory.length > 0 ? battleHistory.map((b) => {
+                const isWinner = b.winner === user?.id;
+                const opponentName = b.player1 === user?.id ? (b.p2?.name || 'AI Bot') : (b.p1?.name || 'Unknown');
+                return (
+                  <motion.div 
+                    key={b.id} 
+                    whileHover={{ scale: 1.02, cursor: 'pointer' }}
+                    onClick={() => navigate(`/battle/analysis/${b.id}`)}
+                    style={{ 
+                      padding: '0.75rem', 
+                      background: 'rgba(255,255,255,0.02)', 
+                      borderRadius: '10px',
+                      borderLeft: `4px solid ${isWinner ? 'var(--success)' : 'var(--danger)'}`
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>vs {opponentName}</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: isWinner ? 'var(--success)' : 'var(--danger)' }}>
+                        {isWinner ? 'WON' : 'LOST'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      <span>{b.topic || 'Custom Quiz'}</span>
+                      <span>{b.score1} - {b.score2}</span>
+                    </div>
+                  </motion.div>
+                );
+              }) : (
+                <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', padding: '1rem' }}>No battles fought yet.</p>
+              )}
+            </div>
+          </section>
+
+          {/* Test History */}
+          <section>
+            <h2 style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '1.4rem' }}>
+              <History color="var(--primary)" size={24} /> Test History
+            </h2>
           <div className="glass" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {Array.isArray(attempts) && attempts.length > 0 ? attempts.slice(0, 8).map((a, idx) => (
+            {Array.isArray(attempts) && attempts.length > 0 ? attempts.slice(0, 8).map((a, i) => (
               <motion.div 
                 key={a.id} 
                 whileHover={{ x: 5, background: 'rgba(255,255,255,0.03)' }}
-                style={{ padding: '0.75rem', borderBottom: idx < Math.min(attempts.length, 8) - 1 ? '1px solid var(--glass-border)' : 'none', cursor: 'pointer', borderRadius: '8px' }} 
+                style={{ padding: '0.75rem', borderBottom: i < Math.min(attempts.length, 8) - 1 ? '1px solid var(--glass-border)' : 'none', cursor: 'pointer', borderRadius: '8px' }} 
                 onClick={() => navigate(`/result/${a.id}`)}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
@@ -199,7 +286,8 @@ const Dashboard: React.FC = () => {
               </motion.div>
             )) : <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1rem' }}>No attempts yet.</p>}
           </div>
-        </section>
+          </section>
+        </aside>
       </div>
 
       {/* Advanced Battle Modal */}
@@ -214,8 +302,8 @@ const Dashboard: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div>
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Subject</label>
-                  <select value={battleConfig.subject} onChange={(e) => setBattleConfig({...battleConfig, subject: e.target.value})} style={{ padding: '0.8rem', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--glass-border)' }}>
-                    {subjects.map(s => <option key={s} value={s} style={{ background: '#1e293b' }}>{s}</option>)}
+                  <select value={battleConfig.subject} onChange={(e) => setBattleConfig({...battleConfig, subject: e.target.value, chapter: '', topic: ''})} style={{ padding: '0.8rem', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--glass-border)' }}>
+                    {allSubjects.map(s => <option key={s} value={s} style={{ background: '#1e293b' }}>{s}</option>)}
                   </select>
                 </div>
 
@@ -223,22 +311,38 @@ const Dashboard: React.FC = () => {
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Chapter Name</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. Chapter 1: Introduction, Algebra Basics..." 
+                    list="chapter-list"
+                    placeholder="e.g. Chapter 1: Introduction..." 
                     value={battleConfig.chapter} 
-                    onChange={(e) => setBattleConfig({...battleConfig, chapter: e.target.value})} 
+                    onChange={(e) => setBattleConfig({...battleConfig, chapter: e.target.value, topic: ''})} 
                     style={{ padding: '0.8rem', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--glass-border)', outline: 'none' }}
                   />
+                  <datalist id="chapter-list">
+                    {syllabusData.chapters.map(c => <option key={c} value={c} />)}
+                  </datalist>
                 </div>
 
                 <div>
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Topic Name</label>
                   <input 
                     type="text" 
+                    list="topic-list"
                     placeholder="e.g. Newton's Laws, Trigonometry..." 
                     value={battleConfig.topic} 
-                    onChange={(e) => setBattleConfig({...battleConfig, topic: e.target.value})} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const selected = syllabusData.topics.find(t => t.topic === val);
+                      setBattleConfig({
+                        ...battleConfig, 
+                        topic: val,
+                        context: selected?.description || battleConfig.context
+                      });
+                    }} 
                     style={{ padding: '0.8rem', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid var(--glass-border)', outline: 'none' }}
                   />
+                  <datalist id="topic-list">
+                    {syllabusData.topics.map(t => <option key={t.topic} value={t.topic} />)}
+                  </datalist>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -261,9 +365,69 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <button onClick={startBattle} disabled={creatingBattle} style={{ padding: '1rem', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer', marginTop: '1rem', boxShadow: '0 10px 20px rgba(0,0,0,0.2)' }}>
-                  {creatingBattle ? 'Creating Custom Room...' : 'Start Battle ⚔️'}
-                </button>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>Exam Level (Standard)</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    {['School Level', 'UG Level', 'PG Level', 'Competitive'].map(s => (
+                      <button 
+                        key={s} 
+                        onClick={() => setBattleConfig({...battleConfig, standard: s})} 
+                        style={{ 
+                          padding: '0.6rem', 
+                          borderRadius: '8px', 
+                          border: '1px solid var(--glass-border)', 
+                          background: battleConfig.standard === s ? 'var(--primary)' : 'transparent', 
+                          color: 'white', 
+                          cursor: 'pointer', 
+                          fontSize: '0.75rem',
+                          fontWeight: 600
+                        }}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>
+                    Upload Syllabus (CSV) - <span style={{ color: 'var(--primary)' }}>Optional</span>
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input 
+                      type="file" 
+                      accept=".csv" 
+                      onChange={handleFileUpload}
+                      style={{ 
+                        padding: '0.8rem', 
+                        width: '100%', 
+                        borderRadius: '8px', 
+                        background: 'rgba(255,255,255,0.05)', 
+                        color: 'white', 
+                        border: '1px solid var(--glass-border)', 
+                        outline: 'none',
+                        fontSize: '0.8rem'
+                      }}
+                    />
+                    {battleConfig.context && (
+                      <p style={{ fontSize: '0.75rem', color: 'var(--success)', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Zap size={14} /> Syllabus context uploaded successfully!
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                  <button 
+                    onClick={() => navigate('/dashboard/syllabus')} 
+                    style={{ flex: 1, padding: '0.8rem', borderRadius: '10px', border: '1px solid var(--primary)', background: 'transparent', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  >
+                    <Database size={16} /> Syllabus Manager
+                  </button>
+                  <button onClick={startBattle} disabled={creatingBattle} style={{ flex: 2, padding: '0.8rem', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 10px 20px rgba(0,0,0,0.2)' }}>
+                    {creatingBattle ? 'Creating Room...' : 'Start Battle ⚔️'}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

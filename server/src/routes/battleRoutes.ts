@@ -6,11 +6,38 @@ const router = Router();
 
 router.post('/create', authenticate, async (req: any, res) => {
   try {
-    const { subject, chapter, topic, difficulty, time_limit, question_count } = req.body;
-    const battle = await BattleService.findAndJoinBattle(req.user.id, subject, chapter, topic, difficulty, time_limit, question_count);
+    const { subject, chapter, topic, difficulty, time_limit, question_count, context, standard } = req.body;
+    const battle = await BattleService.findAndJoinBattle(req.user.id, subject, chapter, topic, difficulty, time_limit, question_count, context, standard);
     res.json(battle);
   } catch (error: any) {
     console.error('[Battle Create Error]:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get('/history', authenticate, async (req: any, res) => {
+  try {
+    const history = await BattleService.getBattleHistory(req.user.id, 5);
+    res.json(history);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get('/:id/analysis', authenticate, async (req: any, res) => {
+  try {
+    const analysis = await BattleService.getBattleAnalysis(req.params.id);
+    res.json(analysis);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/:id/questions', authenticate, async (req: any, res) => {
+  try {
+    await BattleService.saveQuestions(req.params.id, req.body.questions);
+    res.json({ success: true });
+  } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
 });

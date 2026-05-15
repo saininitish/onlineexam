@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Swords, Trophy, Timer, CheckCircle2, XCircle, Volume2, VolumeX } from 'lucide-react';
+import { Swords, Trophy, Timer, CheckCircle2, XCircle, Volume2, VolumeX, FileText } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
@@ -26,6 +26,7 @@ const BattleArena: React.FC = () => {
   const [waitingTime, setWaitingTime] = useState(10);
   const [battleData, setBattleData] = useState<any>(null);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
+  const [language, setLanguage] = useState<'en' | 'hi'>('en');
 
   useEffect(() => {
     const initBattle = async () => {
@@ -37,24 +38,33 @@ const BattleArena: React.FC = () => {
         let qData;
         try {
           const res = await api.post('/ai/generate-questions', {
+            subject: data.subject,
             topic: `${data.chapter || ''} - ${data.topic || ''}`,
             difficulty: data.difficulty || 'Medium',
-            count: data.question_count || 5
+            count: data.question_count || 5,
+            context: data.context || '',
+            standard: data.standard || 'UG Level'
           });
           qData = res.data;
         } catch (aiErr) {
           console.warn('AI question generation failed, using fallback questions', aiErr);
           qData = [
-            { question: "What is the capital of India?", option_a: "Mumbai", option_b: "New Delhi", option_c: "Kolkata", option_d: "Chennai", correct_answer: "b" },
-            { question: "Which planet is known as the Red Planet?", option_a: "Venus", option_b: "Mars", option_c: "Jupiter", option_d: "Saturn", correct_answer: "b" },
-            { question: "Who wrote 'Gitanjali'?", option_a: "Premchand", option_b: "Rabindranath Tagore", option_c: "Kalidas", option_d: "Sarojini Naidu", correct_answer: "b" },
-            { question: "What is the largest ocean on Earth?", option_a: "Atlantic Ocean", option_b: "Pacific Ocean", option_c: "Indian Ocean", option_d: "Arctic Ocean", correct_answer: "b" },
-            { question: "Which metal is liquid at room temperature?", option_a: "Iron", option_b: "Mercury", option_c: "Gold", option_d: "Silver", correct_answer: "b" }
+            { question: "What is the capital of India?", question_hi: "भारत की राजधानी क्या है?", option_a: "Mumbai", option_a_hi: "मुंबई", option_b: "New Delhi", option_b_hi: "नई दिल्ली", option_c: "Kolkata", option_c_hi: "कोलकाता", option_d: "Chennai", option_d_hi: "चेन्नई", correct_answer: "b" },
+            { question: "Which planet is known as the Red Planet?", question_hi: "किस ग्रह को लाल ग्रह के रूप में जाना जाता है?", option_a: "Venus", option_a_hi: "शुक्र", option_b: "Mars", option_b_hi: "मंगल", option_c: "Jupiter", option_c_hi: "बृहस्पति", option_d: "Saturn", option_d_hi: "शनि", correct_answer: "b" },
+            { question: "Who wrote 'Gitanjali'?", question_hi: "'गीतांजलि' किसने लिखी थी?", option_a: "Premchand", option_a_hi: "प्रेमचंद", option_b: "Rabindranath Tagore", option_b_hi: "रवींद्रनाथ टैगोर", option_c: "Kalidas", option_c_hi: "कालिदास", option_d: "Sarojini Naidu", option_d_hi: "सरोजिनी नायडू", correct_answer: "b" },
+            { question: "What is the largest ocean on Earth?", question_hi: "पृथ्वी पर सबसे बड़ा महासागर कौन सा है?", option_a: "Atlantic Ocean", option_a_hi: "अटलांटिक महासागर", option_b: "Pacific Ocean", option_b_hi: "प्रशांत महासागर", option_c: "Indian Ocean", option_c_hi: "हिंद महासागर", option_d: "Arctic Ocean", option_d_hi: "आर्कटिक महासागर", correct_answer: "b" },
+            { question: "Which metal is liquid at room temperature?", question_hi: "कौन सी धातु कमरे के तापमान पर तरल होती है?", option_a: "Iron", option_a_hi: "लोहा", option_b: "Mercury", option_b_hi: "पारा", option_c: "Gold", option_c_hi: "सोना", option_d: "Silver", option_d_hi: "चांदी", correct_answer: "b" }
           ];
         }
         setQuestions(qData);
         setTimeLeft(data.time_limit || 60);
         setLoading(false);
+
+        // Save questions to DB for later analysis
+        if (battleId) {
+          api.post(`/battle/${battleId}/questions`, { questions: qData })
+            .catch(err => console.warn('Failed to save battle questions:', err));
+        }
 
         // Initialize Socket
         const socketBaseUrl = (import.meta.env.VITE_API_URL || window.location.origin).replace('/api', '');
@@ -257,21 +267,40 @@ const BattleArena: React.FC = () => {
       score2: opponentScore
     });
   };
-
   if (loading) return <div style={{ padding: '4rem', textAlign: 'center' }}>Loading Battle Arena...</div>;
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '2rem' }}>
       {/* Header / Stats */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div className="glass" style={{ padding: '1rem 2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>You</p>
-            <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{myScore}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div className="glass" style={{ padding: '1rem 2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>You</p>
+              <p style={{ fontSize: '1.5rem', fontWeight: 800 }}>{myScore}</p>
+            </div>
+            <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {user?.name[0]}
+            </div>
           </div>
-          <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {user?.name[0]}
-          </div>
+          {battleData?.context && (
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              style={{ 
+                background: 'rgba(99,102,241,0.2)', 
+                padding: '0.8rem 1.2rem', 
+                borderRadius: '12px', 
+                border: '1px solid var(--primary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <FileText size={18} color="var(--primary)" />
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.5px' }}>📜 SYLLABUS POWERED</span>
+            </motion.div>
+          )}
         </div>
 
         <div style={{ textAlign: 'center' }}>
@@ -280,25 +309,59 @@ const BattleArena: React.FC = () => {
             <span>{timeLeft}s</span>
           </div>
           <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '0.3rem' }}>Time Left</p>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setIsVoiceEnabled(!isVoiceEnabled)}
-            style={{ 
-              marginTop: '1rem', 
-              padding: '0.5rem', 
-              borderRadius: '50%', 
-              background: isVoiceEnabled ? 'var(--primary)' : 'var(--glass)', 
-              color: 'white',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            {isVoiceEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-          </motion.button>
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setIsVoiceEnabled(!isVoiceEnabled)}
+              style={{ 
+                padding: '0.5rem', 
+                borderRadius: '50%', 
+                background: isVoiceEnabled ? 'var(--primary)' : 'var(--glass)', 
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              {isVoiceEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+            </motion.button>
+
+            <div style={{ display: 'flex', background: 'var(--glass)', borderRadius: '20px', padding: '2px' }}>
+              <button 
+                onClick={() => setLanguage('en')} 
+                style={{ 
+                  padding: '4px 12px', 
+                  borderRadius: '18px', 
+                  fontSize: '0.7rem', 
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: language === 'en' ? 'var(--primary)' : 'transparent',
+                  color: 'white'
+                }}
+              >
+                EN
+              </button>
+              <button 
+                onClick={() => setLanguage('hi')} 
+                style={{ 
+                  padding: '4px 12px', 
+                  borderRadius: '18px', 
+                  fontSize: '0.7rem', 
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: language === 'hi' ? 'var(--primary)' : 'transparent',
+                  color: 'white'
+                }}
+              >
+                HI
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="glass" style={{ padding: '1rem 2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -370,11 +433,17 @@ const BattleArena: React.FC = () => {
               </div>
             </div>
 
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '2.5rem', lineHeight: 1.4 }}>{questions[currentQuestionIndex].question}</h2>
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '2.5rem', lineHeight: 1.4 }}>
+              {language === 'hi' && questions[currentQuestionIndex].question_hi 
+                ? questions[currentQuestionIndex].question_hi 
+                : questions[currentQuestionIndex].question}
+            </h2>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               {['a', 'b', 'c', 'd'].map((key) => {
-                const optText = questions[currentQuestionIndex][`option_${key}`];
+                const optText = (language === 'hi' && questions[currentQuestionIndex][`option_${key}_hi`])
+                  ? questions[currentQuestionIndex][`option_${key}_hi`]
+                  : questions[currentQuestionIndex][`option_${key}`];
                 const isSelected = selectedAnswer === key;
                 const isCorrectOpt = questions[currentQuestionIndex].correct_answer === key;
                 
@@ -405,7 +474,8 @@ const BattleArena: React.FC = () => {
                       gap: '1rem',
                       borderColor,
                       background: bgColor,
-                      cursor: selectedAnswer ? 'default' : 'pointer'
+                      cursor: selectedAnswer ? 'default' : 'pointer',
+                      color: 'white'
                     }}
                   >
                     <span style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--glass)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, textTransform: 'uppercase' }}>

@@ -19,6 +19,8 @@ const TestEngine = lazy(() => import('./pages/TestEngine'));
 const ResultPage = lazy(() => import('./pages/ResultPage'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const BattleArena = lazy(() => import('./pages/student/BattleArena'));
+const BattleAnalysis = lazy(() => import('./pages/student/BattleAnalysis'));
+const SyllabusManager = lazy(() => import('./pages/student/SyllabusManager'));
 
 // Public Layout (Navbar + Content)
 const PublicLayout = () => (
@@ -75,6 +77,7 @@ const App: React.FC = () => {
           <Route path="/dashboard" element={<StudentLayout />}>
             <Route index element={<StudentDashboard />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="syllabus" element={<SyllabusManager />} />
           </Route>
 
           {/* Special Routes (Test Engine doesn't have sidebar) */}
@@ -85,6 +88,10 @@ const App: React.FC = () => {
           <Route 
             path="/battle/:battleId" 
             element={user ? <BattleArena /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/battle/analysis/:battleId" 
+            element={user ? <BattleAnalysis /> : <Navigate to="/login" />} 
           />
           
           <Route element={user?.role === 'admin' ? <AdminLayout /> : <StudentLayout />}>

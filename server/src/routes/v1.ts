@@ -7,6 +7,7 @@ import leaderboardRoutes from './leaderboardRoutes.js';
 import saasRoutes from './saasRoutes.js';
 import aiRoutes from './aiRoutes.js';
 import battleRoutes from './battleRoutes.js';
+import syllabusRoutes from './syllabusRoutes.js';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/leaderboard', leaderboardRoutes);
 router.use('/saas', saasRoutes);
 router.use('/ai', aiRoutes);
 router.use('/battle', battleRoutes);
+router.use('/syllabus', syllabusRoutes);
 
 export default router;
