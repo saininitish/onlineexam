@@ -54,7 +54,7 @@ router.post('/join', authenticate, async (req: any, res) => {
 
 router.get('/:id', authenticate, async (req, res) => {
   try {
-    const battle = await BattleService.getBattle(req.params.id);
+    const battle = await BattleService.getBattle(req.params.id as string);
     res.json(battle);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -63,7 +63,7 @@ router.get('/:id', authenticate, async (req, res) => {
 
 router.post('/:id/submit', authenticate, async (req: any, res) => {
   try {
-    const result = await BattleService.submitAnswer(req.params.id, req.user.id, req.body);
+    const result = await BattleService.submitAnswer(req.params.id as string, req.user.id, req.body);
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -73,7 +73,7 @@ router.post('/:id/submit', authenticate, async (req: any, res) => {
 router.post('/:id/finish', authenticate, async (req, res) => {
   try {
     const { winnerId, score1, score2 } = req.body;
-    const result = await BattleService.finishBattle(req.params.id, winnerId, { score1, score2 });
+    const result = await BattleService.finishBattle(req.params.id as string, winnerId, { score1, score2 });
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
