@@ -75,7 +75,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
     if (testsResult.error) throw testsResult.error;
     if (attemptsResult.error) throw attemptsResult.error;
 
-    const userData = userResult.data || {};
+    const userData: any = userResult.data || {};
 
     res.status(200).json({
       tests: testsResult.data || [],
