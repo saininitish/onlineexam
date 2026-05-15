@@ -77,19 +77,36 @@ CREATE TABLE answers (
   is_correct BOOLEAN,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Syllabus Bank Table
+CREATE TABLE syllabuses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    subject TEXT NOT NULL,
+    chapter TEXT NOT NULL,
+    topic TEXT NOT NULL,
+    description TEXT, -- Context for AI
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Battles Table
+CREATE TABLE battles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    player1 UUID REFERENCES users(id),
+    player2 UUID REFERENCES users(id),
+    subject TEXT,
+    topic TEXT,
+    winner UUID REFERENCES users(id),
+    score1 INT DEFAULT 0,
+    score2 INT DEFAULT 0,
+    status TEXT DEFAULT 'pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 ```
 
-### 2. Backend Setup
-1. Navigate to the `server` directory.
-2. Create a `.env` file based on `.env.example`.
-3. Add your Supabase URL, Anon Key, and a JWT Secret.
-4. Install dependencies: `npm install`
-5. Start development server: `npm run dev`
-
-### 3. Frontend Setup
-1. Navigate to the `client` directory.
-2. Install dependencies: `npm install`
-3. Start development server: `npm run dev`
+### 4. Deployment Notes
+- **Backend (Render)**: Ensure `NODE_ENV` is `production` and all secrets (JWT, Supabase) are set in the dashboard.
+- **Frontend (Vercel)**: You MUST set `VITE_API_URL` to your Render backend URL (ending in `/api`).
 
 ## 🔐 Security
 - Password hashing using Bcrypt.
@@ -97,8 +114,5 @@ CREATE TABLE answers (
 - Role-based access control (Admin vs Student).
 - ✅ Real-time tracking of Time Spent per question
 - ✅ Auto-detection of Question Topic & Difficulty
-- ✅ Weak Topics highlighting for targeted improvement
+- ✅ AI-Grounded Syllabus matching for accurate battles
 
-## 🎯 Future Scalability
-- Real-time leaderboard using Supabase Realtime.
-- Image support for questions.
