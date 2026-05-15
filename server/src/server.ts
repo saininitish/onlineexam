@@ -69,16 +69,19 @@ io.on('connection', (socket) => {
 // 2. Express Middleware
 const allowedOrigins = [
   'https://onlineexam-puce.vercel.app',
+  'https://onlineexam-yj5y.vercel.app',
+  process.env.FRONTEND_URL,
   'http://localhost:5173',
   'http://localhost:3000'
-];
+].filter(Boolean) as string[];
 
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, true); // Still allow for now to debug
+      console.warn('CORS Blocked for origin:', origin);
+      callback(null, true); // Still allow for now to debug, but log it
     }
   },
   credentials: true,
