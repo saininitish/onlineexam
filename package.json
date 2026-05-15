@@ -5,8 +5,7 @@
   "private": true,
   "scripts": {
     "install-all": "npm install && cd server && npm install && cd ../client && npm install",
-    "install-server": "cd server && npm install",
-    "build": "cd server && npm install && npm run build && ls -R dist",
-    "start": "npm start --prefix server"
+    "build": "npm install && cd server && npm install && npx tsc -p tsconfig.json",
+    "start": "node server/dist/server.js"
   }
 }
