@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "install-server": "cd server && npm install",
-    "build-server": "cd server && npm run build && ls -R dist",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build": "cd server && npm install && npm run build",
     "start": "cd server && npm start"
   }
 }
