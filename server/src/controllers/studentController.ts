@@ -67,7 +67,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         .order('submitted_at', { ascending: false }),
       supabase
         .from('users')
-        .select('id, name, email, role')
+        .select('id, name, email, role, points, streak')
         .eq('id', userId)
         .single()
     ]);
@@ -75,10 +75,17 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
     if (testsResult.error) throw testsResult.error;
     if (attemptsResult.error) throw attemptsResult.error;
 
+    const userData = userResult.data || {};
+
     res.status(200).json({
       tests: testsResult.data || [],
       attempts: attemptsResult.data || [],
-      stats: userResult.data || { xp: 0, coins: 0, streak: 0 }
+      stats: {
+        ...userData,
+        xp: userData.points || 0,
+        streak: userData.streak || 0,
+        coins: 0 // Placeholder as coins column is missing
+      }
     });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
