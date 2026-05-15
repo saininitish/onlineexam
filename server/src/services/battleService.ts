@@ -181,4 +181,33 @@ export class BattleService {
 
     return { ...battle, answers };
   }
+
+  static async deleteBattle(battleId: string, userId: string) {
+    // Ensure the battle belongs to the user (either p1 or p2)
+    const { data: battle, error: fetchError } = await supabase
+      .from('battles')
+      .select('player1, player2')
+      .eq('id', battleId)
+      .single();
+    
+    if (fetchError || !battle) throw new AppError('Battle not found', 404);
+    if (battle.player1 !== userId && battle.player2 !== userId) {
+      throw new AppError('Not authorized to delete this battle', 403);
+    }
+
+    const { error: ansError } = await supabase
+      .from('battle_answers')
+      .delete()
+      .eq('battle_id', battleId);
+    
+    if (ansError) throw new AppError(ansError.message, 500);
+
+    const { error } = await supabase
+      .from('battles')
+      .delete()
+      .eq('id', battleId);
+    
+    if (error) throw new AppError(error.message, 500);
+    return { success: true };
+  }
 }

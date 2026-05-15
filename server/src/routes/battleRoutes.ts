@@ -80,4 +80,13 @@ router.post('/:id/finish', authenticate, async (req, res) => {
   }
 });
 
+router.delete('/:id', authenticate, async (req: any, res) => {
+  try {
+    const result = await BattleService.deleteBattle(req.params.id as string, req.user.id);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;

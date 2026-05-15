@@ -15,7 +15,7 @@ console.log('--- SERVER STARTUP DIAGNOSTICS ---');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('PORT:', process.env.PORT);
 console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ LOADED' : '❌ MISSING');
-console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? (process.env.SUPABASE_ANON_KEY.startsWith('eyJ') ? '✅ VALID (JWT)' : '⚠️ INVALID (SHOULD START WITH eyJ)') : '❌ MISSING');
+console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅ LOADED' : '❌ MISSING');
 console.log('GROQ_API_KEY:', process.env.GROQ_API_KEY ? '✅ LOADED' : '❌ MISSING');
 console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ LOADED' : '❌ MISSING');
 console.log('---------------------------------');

@@ -47,19 +47,27 @@ Standard/Level: ${standard}${groundingContext}
 
 REQUIREMENTS:
 1. Return EXACTLY ${count} questions.
-2. For each question, provide 4 options (A, B, C, D).
-3. Include the correct answer (A, B, C, or D) and a detailed step-by-step explanation.
-4. If this is a math or science topic, prioritize shortcut tricks and logical steps in the explanation.
-5. Use BOTH English and Hindi for the question text and options if possible (e.g. "What is 2+2? / 2+2 क्या है?").
-6. Output MUST be a valid JSON array of objects.
+2. Output MUST be a valid JSON array of objects.
+3. Use BOTH English and Hindi for EVERY field. Question text should be bilingual in the "question" field, OR provide "question_hi" for separate Hindi text.
+4. For options, use "option_a", "option_b", "option_c", "option_d".
+5. Provide "correct_answer" as a single lowercase letter: "a", "b", "c", or "d".
+6. Include "explanation" with step-by-step logic and shortcuts.
 
 JSON Format:
 [
   {
-    "question": "Question text in EN/HI",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "answer": "A",
-    "explanation": "Detailed step-by-step explanation with shortcuts"
+    "question": "Question in English",
+    "question_hi": "प्रश्न हिंदी में",
+    "option_a": "Option A English",
+    "option_a_hi": "विकल्प A हिंदी में",
+    "option_b": "Option B English",
+    "option_b_hi": "विकल्प B हिंदी में",
+    "option_c": "Option C English",
+    "option_c_hi": "विकल्प C हिंदी में",
+    "option_d": "Option D English",
+    "option_d_hi": "विकल्प D हिंदी में",
+    "correct_answer": "a",
+    "explanation": "Detailed explanation with shortcuts (Bilingual EN/HI)"
   }
 ]
 
@@ -73,6 +81,7 @@ Return ONLY the JSON array. No conversational text.`;
     });
 
     const text = completion.choices[0]?.message?.content || '[]';
+    console.log(`[AI] Raw response received (${text.length} chars)`);
     
     try {
       let data = JSON.parse(text);

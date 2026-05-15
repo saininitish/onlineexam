@@ -6,10 +6,10 @@ dotenv.config();
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseKey || supabaseKey === 'placeholder' || supabaseKey.startsWith('sb_secret')) {
+if (!supabaseUrl || !supabaseKey || supabaseKey === 'placeholder') {
   const missing = [];
   if (!supabaseUrl) missing.push('SUPABASE_URL');
-  if (!supabaseKey || supabaseKey === 'placeholder' || supabaseKey.startsWith('sb_secret')) missing.push('SUPABASE_ANON_KEY (Missing or Invalid)');
+  if (!supabaseKey || supabaseKey === 'placeholder') missing.push('SUPABASE_ANON_KEY (Missing or Invalid)');
   
   console.error(`❌ CRITICAL ERROR: Supabase Credentials: ${missing.join(', ')}`);
   console.log('Current URL Loaded:', supabaseUrl || 'NOT SET');

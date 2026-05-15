@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { History, Clock, FileText, Trophy, X, Zap, Swords, Settings2, RefreshCw, Database } from 'lucide-react';
+import { History, Clock, FileText, Trophy, X, Zap, Swords, Settings2, RefreshCw, Database, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
@@ -36,6 +36,18 @@ const Dashboard: React.FC = () => {
 
   const baseSubjects = ['Mathematics', 'Science', 'History', 'Geography', 'English', 'General Knowledge', 'Other'];
   const allSubjects = [...new Set([...baseSubjects, ...syllabusData.subjects])];
+
+  const handleDeleteBattle = async (e: React.MouseEvent, battleId: string) => {
+    e.stopPropagation(); // Don't navigate to analysis
+    if (!window.confirm('Delete this battle from history?')) return;
+    
+    try {
+      await api.delete(`/battle/${battleId}`);
+      setBattleHistory(prev => prev.filter(b => b.id !== battleId));
+    } catch (err) {
+      alert('Failed to delete battle');
+    }
+  };
 
   // Fetch syllabus data
   useEffect(() => {
@@ -248,14 +260,24 @@ const Dashboard: React.FC = () => {
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>vs {opponentName}</span>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: isWinner ? 'var(--success)' : 'var(--danger)' }}>
-                        {isWinner ? 'WON' : 'LOST'}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      <span>{b.topic || 'Custom Quiz'}</span>
-                      <span>{b.score1} - {b.score2}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>vs {opponentName}</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{b.topic || 'Custom Quiz'}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <p style={{ fontSize: '0.9rem', fontWeight: 800, color: isWinner ? 'var(--success)' : 'var(--danger)', margin: 0 }}>
+                            {isWinner ? 'WON' : 'LOST'}
+                          </p>
+                          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{b.score1} - {b.score2}</p>
+                        </div>
+                        <button 
+                          onClick={(e) => handleDeleteBattle(e, b.id)}
+                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.25rem' }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 );

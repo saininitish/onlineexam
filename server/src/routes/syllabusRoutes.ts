@@ -42,4 +42,13 @@ router.get('/topics', authenticate, async (req: any, res) => {
   }
 });
 
+router.delete('/reset', authenticate, async (req: any, res) => {
+  try {
+    const result = await SyllabusService.deleteAllSyllabus(req.user.id);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
