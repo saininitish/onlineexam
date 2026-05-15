@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "install-all": "npm install && cd server && npm install && cd ../client && npm install",
-    "build": "cd client && npm install && npm run build",
+    "build": "npm install && cd server && npm install",
     "start": "npx tsx server/src/server.ts"
   }
 }
