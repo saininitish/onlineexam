@@ -1,10 +1,11 @@
 {
   "name": "online-exam-project-root",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "scripts": {
-    "install-server": "cd server && npm install",
-    "build-server": "cd server && npm run build && ls -R dist",
-    "start": "cd server && npm start"
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm install && npm run build",
+    "start": "npx tsx server/src/server.ts"
   }
 }

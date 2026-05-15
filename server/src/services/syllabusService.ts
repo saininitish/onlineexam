@@ -53,4 +53,14 @@ export class SyllabusService {
     if (error) throw new AppError(error.message, 500);
     return data;
   }
+
+  static async deleteAllSyllabus(userId: string) {
+    const { error } = await supabase
+      .from('syllabuses')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (error) throw new AppError(error.message, 500);
+    return { success: true };
+  }
 }

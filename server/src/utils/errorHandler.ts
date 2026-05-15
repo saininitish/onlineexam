@@ -16,10 +16,14 @@ export class AppError extends Error {
 export const handleError = (err: any, res: any) => {
   const { statusCode = 500, message, status = 'error' } = err;
   
-  // Production vs Dev logging
-  if (process.env.NODE_ENV === 'development') {
-    console.error('💥 ERROR:', err);
-  }
+  // Always log error to server console for debugging production issues
+  console.error('💥 ERROR:', {
+    message: err.message,
+    status: err.status,
+    statusCode: err.statusCode,
+    stack: err.stack,
+    details: err // Capture full object for Supabase errors
+  });
 
   res.status(statusCode).json({
     status,

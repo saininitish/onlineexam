@@ -10,6 +10,16 @@ import { rateLimit } from 'express-rate-limit';
 
 dotenv.config();
 
+// Diagnostic Startup Log
+console.log('--- SERVER STARTUP DIAGNOSTICS ---');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ LOADED' : '❌ MISSING');
+console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✅ LOADED' : '❌ MISSING');
+console.log('GROQ_API_KEY:', process.env.GROQ_API_KEY ? '✅ LOADED' : '❌ MISSING');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ LOADED' : '❌ MISSING');
+console.log('---------------------------------');
+
 const app = express();
 const httpServer = createServer(app);
 
@@ -59,16 +69,19 @@ io.on('connection', (socket) => {
 // 2. Express Middleware
 const allowedOrigins = [
   'https://onlineexam-puce.vercel.app',
+  'https://onlineexam-yj5y.vercel.app',
+  process.env.FRONTEND_URL,
   'http://localhost:5173',
   'http://localhost:3000'
-];
+].filter(Boolean) as string[];
 
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, true); // Still allow for now to debug
+      console.warn('CORS Blocked for origin:', origin);
+      callback(null, true); // Still allow for now to debug, but log it
     }
   },
   credentials: true,
@@ -82,7 +95,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use((req, res, next) => {
   const startedAt = Date.now();
-  console.log(`[REQ] ${req.method} ${req.url}`);
+  console.log(`[REQ] ${req.method} ${req.url}`, req.method === 'POST' ? req.body : '');
   res.on('finish', () => {
     console.log(`[RES] ${req.method} ${req.url} ${res.statusCode} ${Date.now() - startedAt}ms`);
   });
@@ -112,3 +125,5 @@ httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log('✅ Socket.io initialized and bound to httpServer');
 });
+
+

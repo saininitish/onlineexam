@@ -4,10 +4,12 @@ import { AuthRequest } from '../middleware/authMiddleware.js';
 
 export const handleGenerateQuestions = async (req: Request, res: Response) => {
   try {
-    const { topic, difficulty, count } = req.body;
-    const questions = await generateAIQuestions(topic, difficulty, count);
+    const { subject, topic, difficulty, count, context, standard } = req.body;
+    console.log(`[AI] Requesting questions for: ${subject} -> ${topic}`);
+    const questions = await generateAIQuestions(subject, topic, difficulty, count, context, standard);
     res.json(questions);
   } catch (error: any) {
+    console.error('[AI] Generation Error:', error.message);
     res.status(500).json({ message: error.message });
   }
 };
