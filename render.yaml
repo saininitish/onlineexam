@@ -5,7 +5,7 @@ services:
     plan: free
     region: ohio
     buildCommand: npm install && npm run build
-    startCommand: npm start
+    startCommand: npx tsx server/src/server.ts
     envVars:
       - key: NODE_ENV
         value: production

@@ -4,9 +4,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node dist/server.js",
+    "start": "tsx src/server.ts",
     "dev": "tsx watch src/server.ts",
-    "build": "rm -rf dist && tsc"
+    "build": "echo 'Skipping build, using tsx directly'"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +15,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.104.1",
+    "tsx": "^4.21.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
@@ -37,7 +38,6 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.21.0"
+    "ts-node": "^10.9.2"
   }
 }
