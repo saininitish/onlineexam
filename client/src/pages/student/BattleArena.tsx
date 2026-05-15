@@ -57,7 +57,7 @@ const BattleArena: React.FC = () => {
         setLoading(false);
 
         // Initialize Socket
-        const socketBaseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace('/api', '');
+        const socketBaseUrl = (import.meta.env.VITE_API_URL || window.location.origin).replace('/api', '');
         const socket = io(socketBaseUrl, {
           path: '/socket.io/'
         });

@@ -2,6 +2,14 @@ import axios, { type AxiosRequestHeaders } from 'axios';
 
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+if (import.meta.env.PROD) {
+  console.log('🌐 App running in PRODUCTION mode');
+  console.log('📡 API Base URL:', API_URL);
+  if (API_URL.includes('localhost')) {
+    console.warn('⚠️ WARNING: API_URL is still pointing to localhost in production! Please set VITE_API_URL in your deployment platform.');
+  }
+}
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {

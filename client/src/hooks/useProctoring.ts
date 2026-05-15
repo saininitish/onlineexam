@@ -12,8 +12,8 @@ const getSocketUrl = () => {
     return url;
   }
 
-  // Local development fallback
-  return 'http://localhost:5000';
+  // Fallback to current origin if nothing else is found
+  return window.location.origin;
 };
 
 
