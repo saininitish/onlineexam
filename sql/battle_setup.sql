@@ -42,3 +42,18 @@ SELECT
     RANK() OVER (ORDER BY points DESC) as global_rank
 FROM users
 WHERE role = 'student';
+
+-- 5. Create syllabuses table
+CREATE TABLE IF NOT EXISTS syllabuses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    subject TEXT NOT NULL,
+    chapter TEXT NOT NULL,
+    topic TEXT NOT NULL,
+    description TEXT, -- This stores the "Context" for AI
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_syllabus_user ON syllabuses(user_id);
+CREATE INDEX IF NOT EXISTS idx_syllabus_subject ON syllabuses(subject);
+
