@@ -78,11 +78,13 @@ export class AuthService {
       .single();
 
     if (!user || error) {
+      console.warn(`[Login] Failure: User not found or DB error for ${email}. Error:`, error);
       throw new AppError('Invalid credentials', 400);
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.warn(`[Login] Failure: Password mismatch for ${email}`);
       throw new AppError('Invalid credentials', 400);
     }
 
