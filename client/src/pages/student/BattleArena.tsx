@@ -48,13 +48,21 @@ const BattleArena: React.FC = () => {
           qData = res.data;
         } catch (aiErr) {
           console.warn('AI question generation failed, using fallback questions', aiErr);
-          qData = [
-            { question: "What is the capital of India?", question_hi: "भारत की राजधानी क्या है?", option_a: "Mumbai", option_a_hi: "मुंबई", option_b: "New Delhi", option_b_hi: "नई दिल्ली", option_c: "Kolkata", option_c_hi: "कोलकाता", option_d: "Chennai", option_d_hi: "चेन्नई", correct_answer: "b" },
-            { question: "Which planet is known as the Red Planet?", question_hi: "किस ग्रह को लाल ग्रह के रूप में जाना जाता है?", option_a: "Venus", option_a_hi: "शुक्र", option_b: "Mars", option_b_hi: "मंगल", option_c: "Jupiter", option_c_hi: "बृहस्पति", option_d: "Saturn", option_d_hi: "शनि", correct_answer: "b" },
-            { question: "Who wrote 'Gitanjali'?", question_hi: "'गीतांजलि' किसने लिखी थी?", option_a: "Premchand", option_a_hi: "प्रेमचंद", option_b: "Rabindranath Tagore", option_b_hi: "रवींद्रनाथ टैगोर", option_c: "Kalidas", option_c_hi: "कालिदास", option_d: "Sarojini Naidu", option_d_hi: "सरोजिनी नायडू", correct_answer: "b" },
-            { question: "What is the largest ocean on Earth?", question_hi: "पृथ्वी पर सबसे बड़ा महासागर कौन सा है?", option_a: "Atlantic Ocean", option_a_hi: "अटलांटिक महासागर", option_b: "Pacific Ocean", option_b_hi: "प्रशांत महासागर", option_c: "Indian Ocean", option_c_hi: "हिंद महासागर", option_d: "Arctic Ocean", option_d_hi: "आर्कटिक महासागर", correct_answer: "b" },
-            { question: "Which metal is liquid at room temperature?", question_hi: "कौन सी धातु कमरे के तापमान पर तरल होती है?", option_a: "Iron", option_a_hi: "लोहा", option_b: "Mercury", option_b_hi: "पारा", option_c: "Gold", option_c_hi: "सोना", option_d: "Silver", option_d_hi: "चांदी", correct_answer: "b" }
-          ];
+          const subjName = data.subject || 'Subject';
+          const topicName = data.topic || 'Topic';
+          qData = Array(5).fill(null).map((_, i) => ({
+            question: `[AI Timeout Fallback] Which of the following is an important concept in ${subjName} (${topicName})? - Q${i + 1}`,
+            question_hi: `[AI टाइमआउट बैकअप] ${subjName} (${topicName}) में निम्नलिखित में से कौन सी एक महत्वपूर्ण अवधारणा है? - Q${i + 1}`,
+            option_a: `Concept A related to ${subjName}`,
+            option_a_hi: `${subjName} से संबंधित अवधारणा A`,
+            option_b: `Concept B related to ${subjName}`,
+            option_b_hi: `${subjName} से संबंधित अवधारणा B`,
+            option_c: `Concept C related to ${subjName}`,
+            option_c_hi: `${subjName} से संबंधित अवधारणा C`,
+            option_d: `Concept D related to ${subjName}`,
+            option_d_hi: `${subjName} से संबंधित अवधारणा D`,
+            correct_answer: ["a", "b", "c", "d"][Math.floor(Math.random() * 4)]
+          }));
         }
         setQuestions(qData);
         setTimeLeft(data.time_limit || 60);

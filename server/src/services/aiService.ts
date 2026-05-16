@@ -78,35 +78,37 @@ async function generateAIQuestionsBatch(
       console.log('[AI] Using syllabus grounding context.');
     }
 
-    let difficultyGuidelines = `1. Conceptual Depth: Questions must test deep understanding, application of concepts, and analytical thinking, not just rote memorization.
-2. Trickiness & Traps: Include plausible distractors (wrong options) based on common student misconceptions.`;
+    let difficultyGuidelines = `1. Conceptual Depth: Questions must test deep understanding, application of concepts, and analytical thinking. ABSOLUTELY NO trivial, direct, or "copy-paste" textbook questions. Every question must make the student think.
+2. Trickiness & Traps: Options must be highly confusing. Include plausible distractors (wrong options) based on common student misconceptions.
+3. Engaging Scenarios: Where possible, use real-world applications or case-based setups to make the questions highly engaging.`;
 
     if (difficulty === 'Hard') {
-      difficultyGuidelines = `1. EXTREME DIFFICULTY: These questions must be insanely difficult and strictly match the highest tier of the '${standard}' level. Require multi-step logical deduction, complex problem-solving, and deep analytical thought.
-2. DEADLY TRAPS: Distractors MUST be cleverly crafted from highly common advanced mistakes. Do not make the correct answer obvious.
-3. ELITE LEVEL: Avoid straightforward factual questions. Use complex scenarios, assertion-reasoning, statement-based logic, or advanced numericals.`;
+      difficultyGuidelines = `1. EXTREME DIFFICULTY: These questions must be insanely difficult, strictly matching the highest tier of the '${standard}' level (e.g., JEE Advanced, UPSC, GATE level). Require multi-step logical deduction, complex problem-solving, and deep analytical thought.
+2. DEADLY TRAPS: Distractors MUST be cleverly crafted from highly common advanced mistakes. The correct answer should never be obvious.
+3. ELITE LEVEL: Zero factual questions. Use complex scenarios, multiple-statement evaluation (1 and 2 only, etc.), assertion-reasoning, or advanced numericals.`;
     }
 
-    const prompt = `You are an Elite Competitive Exam Setter and Master Coach for top-tier exams.
-Your task is to craft ${count} EXCEPTIONALLY HIGH-QUALITY, original Multiple Choice Questions (MCQs) for the following:
+    const prompt = `You are a World-Class Elite Competitive Exam Setter and Master Coach for top-tier exams.
+Your task is to craft ${count} MASTERPIECE, EXCEPTIONALLY HIGH-QUALITY, and completely original Multiple Choice Questions (MCQs) for the following:
 Subject: ${subject}
 Topic: ${topic}
 Difficulty: ${difficulty}
 Standard/Level: ${standard}${groundingContext}
 
 QUALITY & RIGOR REQUIREMENTS:
+0. ABSOLUTE SUBJECT STRICTNESS: Every single question must be strictly and exclusively about the Subject: "${subject}" and Topic: "${topic}". Do NOT generate questions about general knowledge or any other subject.
 ${difficultyGuidelines}
-3. MAXIMUM VARIETY (CRITICAL): Ensure EVERY question covers a COMPLETELY DIFFERENT sub-concept, formula, or application pattern within the topic. Do NOT repeat the same type of question. Give maximum diversity.
-4. Clarity & Precision: Phrasing must be unambiguous, academically rigorous, and grammatically perfect in both English and Hindi.
-5. Absolute Accuracy: The correct answer MUST be indisputably correct. Explanations must be a masterclass, revealing the fastest shortcut trick along with the traditional method.
+4. MAXIMUM VARIETY (CRITICAL): Ensure EVERY question covers a COMPLETELY DIFFERENT sub-concept, formula, or application pattern within the topic. Do NOT repeat the same type of question. Give maximum diversity.
+5. Clarity & Precision: Phrasing must be unambiguous, academically rigorous, and grammatically perfect in both English and Hindi.
+6. Absolute Accuracy: The correct answer MUST be indisputably correct. Explanations must be a masterclass, revealing the fastest shortcut trick along with the traditional method.
 
 STRUCTURAL REQUIREMENTS:
 1. Return EXACTLY ${count} questions.
 2. Output MUST be a valid JSON array of objects.
-3. Use BOTH English and Hindi for EVERY field. Question text should be bilingual in the "question" field, OR provide "question_hi" for separate Hindi text.
+3. Provide the English text in the main fields ("question", "option_a", etc.) and its EXACT Hindi translation in the corresponding "_hi" fields ("question_hi", "option_a_hi", etc.). Do NOT mix languages in the same field.
 4. For options, use "option_a", "option_b", "option_c", "option_d".
 5. Provide "correct_answer" as a single lowercase letter: "a", "b", "c", or "d".
-6. Include "explanation" with step-by-step logic and shortcuts.
+6. Include "explanation" with step-by-step logic and shortcuts (this can be bilingual/Hinglish).
 7. DO NOT RETURN THE PLACEHOLDER TEXT. YOU MUST GENERATE ACTUAL QUESTIONS.
 
 JSON Format Example (REPLACE VALUES WITH YOUR ACTUAL GENERATED CONTENT):
@@ -133,9 +135,9 @@ Return ONLY the JSON object. Do not include conversational text or markdown code
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.7,
-      max_tokens: 8000,
+      model: "llama-3.1-8b-instant",
+      temperature: 0.85,
+      max_tokens: 3000,
       response_format: { type: "json_object" }
     });
 
@@ -200,7 +202,7 @@ REQUIREMENTS:
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant",
       temperature: 0.5,
     });
 
@@ -231,7 +233,7 @@ export const generateAIStudyPlan = async (performanceData: any) => {
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant",
       temperature: 0.6,
       response_format: { type: "json_object" }
     });
