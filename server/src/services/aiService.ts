@@ -28,6 +28,46 @@ export async function generateAIQuestions(
   context: string = '',
   standard: string = 'UG Level'
 ) {
+  if (count <= 10) {
+    return generateAIQuestionsBatch(subject, topic, difficulty, count, context, standard);
+  }
+
+  const BATCH_SIZE = 10;
+  let remaining = count;
+  const allQuestions: any[] = [];
+
+  console.log(`[AI] Breaking down request of ${count} questions into batches of ${BATCH_SIZE} to avoid token/rate limits...`);
+
+  while (remaining > 0) {
+    const currentBatchSize = Math.min(remaining, BATCH_SIZE);
+    console.log(`[AI] Generating batch of ${currentBatchSize} questions...`);
+    try {
+      const batchResult = await generateAIQuestionsBatch(subject, topic, difficulty, currentBatchSize, context, standard);
+      allQuestions.push(...batchResult);
+    } catch (err) {
+      console.error(`[AI] Batch failed. Error:`, err);
+      if (allQuestions.length === 0) throw err;
+      break; // Return whatever we have generated so far
+    }
+    remaining -= currentBatchSize;
+
+    if (remaining > 0) {
+      // 3 second delay to avoid strict rate limiting
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+  }
+
+  return allQuestions;
+}
+
+async function generateAIQuestionsBatch(
+  subject: string, 
+  topic: string, 
+  difficulty: string = 'Medium', 
+  count: number = 5,
+  context: string = '',
+  standard: string = 'UG Level'
+) {
   try {
     const groq = getGroqClient();
     console.log(`[AI] Generating ${count} questions for ${subject} -> ${topic} (${difficulty})`);
@@ -38,45 +78,64 @@ export async function generateAIQuestions(
       console.log('[AI] Using syllabus grounding context.');
     }
 
-    const prompt = `You are a Competitive Exam Coach.
-Generate ${count} highly accurate MCQ questions for the following:
+    let difficultyGuidelines = `1. Conceptual Depth: Questions must test deep understanding, application of concepts, and analytical thinking, not just rote memorization.
+2. Trickiness & Traps: Include plausible distractors (wrong options) based on common student misconceptions.`;
+
+    if (difficulty === 'Hard') {
+      difficultyGuidelines = `1. EXTREME DIFFICULTY: These questions must be insanely difficult and strictly match the highest tier of the '${standard}' level. Require multi-step logical deduction, complex problem-solving, and deep analytical thought.
+2. DEADLY TRAPS: Distractors MUST be cleverly crafted from highly common advanced mistakes. Do not make the correct answer obvious.
+3. ELITE LEVEL: Avoid straightforward factual questions. Use complex scenarios, assertion-reasoning, statement-based logic, or advanced numericals.`;
+    }
+
+    const prompt = `You are an Elite Competitive Exam Setter and Master Coach for top-tier exams.
+Your task is to craft ${count} EXCEPTIONALLY HIGH-QUALITY, original Multiple Choice Questions (MCQs) for the following:
 Subject: ${subject}
 Topic: ${topic}
 Difficulty: ${difficulty}
 Standard/Level: ${standard}${groundingContext}
 
-REQUIREMENTS:
+QUALITY & RIGOR REQUIREMENTS:
+${difficultyGuidelines}
+3. MAXIMUM VARIETY (CRITICAL): Ensure EVERY question covers a COMPLETELY DIFFERENT sub-concept, formula, or application pattern within the topic. Do NOT repeat the same type of question. Give maximum diversity.
+4. Clarity & Precision: Phrasing must be unambiguous, academically rigorous, and grammatically perfect in both English and Hindi.
+5. Absolute Accuracy: The correct answer MUST be indisputably correct. Explanations must be a masterclass, revealing the fastest shortcut trick along with the traditional method.
+
+STRUCTURAL REQUIREMENTS:
 1. Return EXACTLY ${count} questions.
 2. Output MUST be a valid JSON array of objects.
 3. Use BOTH English and Hindi for EVERY field. Question text should be bilingual in the "question" field, OR provide "question_hi" for separate Hindi text.
 4. For options, use "option_a", "option_b", "option_c", "option_d".
 5. Provide "correct_answer" as a single lowercase letter: "a", "b", "c", or "d".
 6. Include "explanation" with step-by-step logic and shortcuts.
+7. DO NOT RETURN THE PLACEHOLDER TEXT. YOU MUST GENERATE ACTUAL QUESTIONS.
 
-JSON Format:
-[
-  {
-    "question": "Question in English",
-    "question_hi": "प्रश्न हिंदी में",
-    "option_a": "Option A English",
-    "option_a_hi": "विकल्प A हिंदी में",
-    "option_b": "Option B English",
-    "option_b_hi": "विकल्प B हिंदी में",
-    "option_c": "Option C English",
-    "option_c_hi": "विकल्प C हिंदी में",
-    "option_d": "Option D English",
-    "option_d_hi": "विकल्प D हिंदी में",
+JSON Format Example (REPLACE VALUES WITH YOUR ACTUAL GENERATED CONTENT):
+{
+  "questions": [
+    {
+    "question": "<Actual question text in English>",
+    "question_hi": "<Actual question text in Hindi>",
+    "option_a": "<Actual Option A text in English>",
+    "option_a_hi": "<Actual Option A text in Hindi>",
+    "option_b": "<Actual Option B text in English>",
+    "option_b_hi": "<Actual Option B text in Hindi>",
+    "option_c": "<Actual Option C text in English>",
+    "option_c_hi": "<Actual Option C text in Hindi>",
+    "option_d": "<Actual Option D text in English>",
+    "option_d_hi": "<Actual Option D text in Hindi>",
     "correct_answer": "a",
-    "explanation": "Detailed explanation with shortcuts (Bilingual EN/HI)"
+    "explanation": "<Detailed step-by-step logic + 🚀 SHORTCUT TRICK (Bilingual EN/HI)>"
   }
-]
+  ]
+}
 
-Return ONLY the JSON array. No conversational text.`;
+Return ONLY the JSON object. Do not include conversational text or markdown code blocks around it. Ensure you generate EXACTLY ${count} questions before closing the JSON.`;
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
       model: "llama-3.3-70b-versatile",
       temperature: 0.7,
+      max_tokens: 8000,
       response_format: { type: "json_object" }
     });
 
@@ -85,8 +144,11 @@ Return ONLY the JSON array. No conversational text.`;
     
     try {
       let data = JSON.parse(text);
-      if (!Array.isArray(data) && data.questions) {
+      if (data && typeof data === 'object' && !Array.isArray(data) && data.questions) {
         data = data.questions;
+      }
+      if (!Array.isArray(data)) {
+        throw new Error('LLM did not return an array of questions.');
       }
       return data;
     } catch (parseError) {
@@ -95,9 +157,17 @@ Return ONLY the JSON array. No conversational text.`;
       const start = cleanedText.indexOf('[');
       const end = cleanedText.lastIndexOf(']');
       if (start !== -1 && end !== -1) {
-        return JSON.parse(cleanedText.substring(start, end + 1));
+        try {
+          let fallbackData = JSON.parse(cleanedText.substring(start, end + 1));
+          if (fallbackData && typeof fallbackData === 'object' && !Array.isArray(fallbackData) && fallbackData.questions) {
+            fallbackData = fallbackData.questions;
+          }
+          if (Array.isArray(fallbackData)) return fallbackData;
+        } catch (e) {
+          console.error('[AI] Fallback JSON parse also failed.');
+        }
       }
-      throw parseError;
+      return []; // Return empty array instead of crashing so the system can gracefully handle it
     }
   } catch (error: any) {
     console.error('Groq Generation failed:', error);
@@ -114,14 +184,19 @@ export async function generateAIExplanation(question: string, correctAnswer: str
       ? Object.entries(options).map(([k, v]) => `${k}: ${v}`).join(', ')
       : Array.isArray(options) ? options.join(', ') : String(options);
 
-    const prompt = `Explain this question for a competitive exam student. 
-Provide a step-by-step logical breakdown and any short-cut tricks if applicable.
+    const prompt = `You are a Master Educator and Elite Exam Coach. 
+Provide a crystal-clear, deep-dive explanation for this competitive exam question.
+Your explanation should feel like a "Eureka" moment for the student.
+
 Question: ${question}
 Options: ${optionsText}
 Correct Answer: ${correctAnswer}
 
-Format your response in a clear, educational way. Use both English and Hindi.
-Include a section "🚀 BEST SHORTCUT TRICK" if applicable.`;
+REQUIREMENTS:
+1. Step-by-Step Logic: Break down the traditional method clearly.
+2. Common Traps: Explain WHY the other popular options are wrong (misconceptions).
+3. 🚀 BEST SHORTCUT TRICK: Provide a time-saving ninja technique, formula, or elimination method to solve this in 5-10 seconds (if applicable).
+4. Language: Use a highly engaging, encouraging tone. Format in a mix of English and Hindi (Hinglish) for maximum relatability.`;
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],

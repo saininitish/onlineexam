@@ -6,6 +6,10 @@ import { LiveProctoring } from '../../components/admin/LiveProctoring';
 
 import api from '../../services/api';
 import { serializeQuestion, parseQuestion } from '../../utils/questionMeta';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '0.75rem', borderRadius: '10px',
@@ -166,8 +170,36 @@ const AdminDashboard: React.FC = () => {
 
   // Auto Generate Test Modal
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
-  const [generateForm, setGenerateForm] = useState({ title: 'Generated Test', duration: 30, marks_per_question: 1, negative_mark: 0, topic: '', chapter: '' });
+  const [generateForm, setGenerateForm] = useState({ title: 'Generated Test', duration: 30, marks_per_question: 1, negative_mark: 0, topic: '', chapter: '', source: 'ai', subject: 'General', context: '', count: 10, difficulty: 'Medium', standard: '', collegeLevel: '' });
   const [generating, setGenerating] = useState(false);
+  const contextFileRef = useRef<HTMLInputElement>(null);
+
+  const handleContextFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          fullText += pageText + '\n';
+        }
+        setGenerateForm(prev => ({ ...prev, context: prev.context + (prev.context ? '\n\n' : '') + `[Extracted from PYQ PDF: ${file.name}]:\n${fullText}` }));
+      } else {
+        const text = await file.text();
+        setGenerateForm(prev => ({ ...prev, context: prev.context + (prev.context ? '\n\n' : '') + `[Extracted from Document: ${file.name}]:\n${text}` }));
+      }
+    } catch (err) {
+      alert('Failed to read file. Make sure it is a valid PDF or Text file.');
+      console.error(err);
+    }
+    if (contextFileRef.current) contextFileRef.current.value = '';
+  };
 
   // Add/Edit Question Modal
   const [isQuestionOpen, setIsQuestionOpen] = useState(false);
@@ -293,66 +325,99 @@ const AdminDashboard: React.FC = () => {
     e.preventDefault();
     setGenerating(true);
     try {
-      const { data: adminTests } = await api.get('/admin/tests');
-      let allQuestions: any[] = [];
+      if (generateForm.source === 'ai') {
+        const { data: newTest } = await api.post('/admin/tests', {
+          title: generateForm.title,
+          duration: generateForm.duration,
+          marks_per_question: generateForm.marks_per_question,
+          negative_mark: generateForm.negative_mark
+        });
 
-      for (const t of adminTests) {
-        try {
-          const { data: qData } = await api.get(`/admin/questions/${t.id}`);
-          allQuestions = [...allQuestions, ...qData];
-        } catch (e) { }
+        const { data: generatedQuestions } = await api.post('/admin/ai/generate-questions', {
+          subject: generateForm.subject,
+          topic: `${generateForm.chapter ? generateForm.chapter + ' - ' : ''}${generateForm.topic}`,
+          difficulty: generateForm.difficulty,
+          count: generateForm.count,
+          context: generateForm.context,
+          standard: generateForm.collegeLevel ? `${generateForm.standard} (${generateForm.collegeLevel})` : generateForm.standard
+        });
+
+        const questionsWithTestId = generatedQuestions.map((q: any) => ({
+          ...q,
+          test_id: newTest.id,
+          question: serializeQuestion(q.question, generateForm.topic, generateForm.difficulty, generateForm.chapter, q.question_hi)
+        }));
+
+        await api.post('/admin/questions/bulk', {
+          test_id: newTest.id,
+          questions: questionsWithTestId
+        });
+
+        alert(`✨ AI successfully generated a test with ${generateForm.count} questions!`);
+        setIsGenerateOpen(false);
+        fetchTests();
+      } else {
+        const { data: adminTests } = await api.get('/admin/tests');
+        let allQuestions: any[] = [];
+
+        for (const t of adminTests) {
+          try {
+            const { data: qData } = await api.get(`/admin/questions/${t.id}`);
+            allQuestions = [...allQuestions, ...qData];
+          } catch (e) { }
+        }
+
+        let pool = allQuestions.map(q => {
+          const meta = parseQuestion(q.question);
+          return { ...q, meta };
+        });
+
+        if (generateForm.topic) {
+          pool = pool.filter(q => q.meta.topic?.toLowerCase().includes(generateForm.topic.toLowerCase()));
+        }
+        if (generateForm.chapter) {
+          pool = pool.filter(q => q.meta.chapter?.toLowerCase().includes(generateForm.chapter.toLowerCase()));
+        }
+
+        const easy = pool.filter(q => q.meta.difficulty === 'Easy').sort(() => 0.5 - Math.random()).slice(0, 5);
+        const medium = pool.filter(q => q.meta.difficulty === 'Medium').sort(() => 0.5 - Math.random()).slice(0, 5);
+        const hard = pool.filter(q => q.meta.difficulty === 'Hard').sort(() => 0.5 - Math.random()).slice(0, 5);
+
+        const selected = [...easy, ...medium, ...hard];
+        if (selected.length === 0) {
+          alert('Not enough questions match your criteria across your tests!');
+          setGenerating(false);
+          return;
+        }
+
+        const { data: newTest } = await api.post('/admin/tests', {
+          title: generateForm.title,
+          duration: generateForm.duration,
+          marks_per_question: generateForm.marks_per_question,
+          negative_mark: generateForm.negative_mark
+        });
+
+        const payload = selected.map(q => ({
+          question: q.question,
+          option_a: q.option_a,
+          option_b: q.option_b,
+          option_c: q.option_c,
+          option_d: q.option_d,
+          correct_answer: q.correct_answer
+        }));
+
+        await api.post('/admin/questions/bulk', {
+          test_id: newTest.id,
+          questions: payload
+        });
+
+        alert(`Successfully generated test with ${selected.length} questions! (${easy.length} Easy, ${medium.length} Medium, ${hard.length} Hard)`);
+        setIsGenerateOpen(false);
+        fetchTests();
       }
-
-      let pool = allQuestions.map(q => {
-        const meta = parseQuestion(q.question);
-        return { ...q, meta };
-      });
-
-      if (generateForm.topic) {
-        pool = pool.filter(q => q.meta.topic?.toLowerCase().includes(generateForm.topic.toLowerCase()));
-      }
-      if (generateForm.chapter) {
-        pool = pool.filter(q => q.meta.chapter?.toLowerCase().includes(generateForm.chapter.toLowerCase()));
-      }
-
-      const easy = pool.filter(q => q.meta.difficulty === 'Easy').sort(() => 0.5 - Math.random()).slice(0, 5);
-      const medium = pool.filter(q => q.meta.difficulty === 'Medium').sort(() => 0.5 - Math.random()).slice(0, 5);
-      const hard = pool.filter(q => q.meta.difficulty === 'Hard').sort(() => 0.5 - Math.random()).slice(0, 5);
-
-      const selected = [...easy, ...medium, ...hard];
-      if (selected.length === 0) {
-        alert('Not enough questions match your criteria across your tests!');
-        setGenerating(false);
-        return;
-      }
-
-      const { data: newTest } = await api.post('/admin/tests', {
-        title: generateForm.title,
-        duration: generateForm.duration,
-        marks_per_question: generateForm.marks_per_question,
-        negative_mark: generateForm.negative_mark
-      });
-
-      const payload = selected.map(q => ({
-        question: q.question,
-        option_a: q.option_a,
-        option_b: q.option_b,
-        option_c: q.option_c,
-        option_d: q.option_d,
-        correct_answer: q.correct_answer
-      }));
-
-      await api.post('/admin/questions/bulk', {
-        test_id: newTest.id,
-        questions: payload
-      });
-
-      alert(`Successfully generated test with ${selected.length} questions! (${easy.length} Easy, ${medium.length} Medium, ${hard.length} Hard)`);
-      setIsGenerateOpen(false);
-      fetchTests();
     } catch (err) {
       console.error(err);
-      alert('Failed to generate test. Make sure you have enough questions in other tests.');
+      alert('Failed to generate test. Check logs.');
     } finally {
       setGenerating(false);
     }
@@ -921,15 +986,151 @@ const AdminDashboard: React.FC = () => {
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass" style={{ width: '100%', maxWidth: '500px', padding: '2.5rem', position: 'relative' }}>
               <button onClick={() => setIsGenerateOpen(false)} style={{ position: 'absolute', right: '1.5rem', top: '1.5rem', color: 'var(--text-muted)' }}><X size={24} /></button>
-              <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Trophy size={24} color="var(--primary)" /> Auto Generate Test</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Pulls 5 Easy, 5 Medium, and 5 Hard questions from your existing question pool to create a new test.</p>
+              <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Trophy size={24} color="var(--primary)" /> Generate Test</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Use AI to create a completely new test, or pick questions from your existing pool.</p>
 
-              <form onSubmit={handleGenerateTest} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div><label style={labelStyle}>Test Title</label><input required type="text" value={generateForm.title} onChange={e => setGenerateForm({ ...generateForm, title: e.target.value })} style={inputStyle} /></div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div><label style={labelStyle}>Topic (Optional filter)</label><input type="text" placeholder="e.g. Math" value={generateForm.topic} onChange={e => setGenerateForm({ ...generateForm, topic: e.target.value })} style={inputStyle} /></div>
-                  <div><label style={labelStyle}>Chapter (Optional filter)</label><input type="text" value={generateForm.chapter} onChange={e => setGenerateForm({ ...generateForm, chapter: e.target.value })} style={inputStyle} /></div>
+              <form onSubmit={handleGenerateTest} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '70vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input type="radio" checked={generateForm.source === 'ai'} onChange={() => setGenerateForm({...generateForm, source: 'ai'})} /> 
+                    <span style={{ fontWeight: 600, color: generateForm.source === 'ai' ? 'var(--primary)' : 'white' }}>✨ Create using AI</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input type="radio" checked={generateForm.source === 'pool'} onChange={() => setGenerateForm({...generateForm, source: 'pool'})} /> 
+                    <span style={{ fontWeight: 600, color: generateForm.source === 'pool' ? 'var(--primary)' : 'white' }}>📚 Pick from Pool</span>
+                  </label>
                 </div>
+                
+                <div><label style={labelStyle}>Test Title</label><input required type="text" value={generateForm.title} onChange={e => setGenerateForm({ ...generateForm, title: e.target.value })} style={inputStyle} /></div>
+                
+                {generateForm.source === 'ai' && (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div><label style={labelStyle}>Subject</label><input type="text" required placeholder="e.g. Science" value={generateForm.subject} onChange={e => setGenerateForm({ ...generateForm, subject: e.target.value })} style={inputStyle} /></div>
+                      <div><label style={labelStyle}>Topic</label><input type="text" required placeholder="e.g. Physics" value={generateForm.topic} onChange={e => setGenerateForm({ ...generateForm, topic: e.target.value })} style={inputStyle} /></div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div><label style={labelStyle}>Chapter (Optional)</label><input type="text" placeholder="e.g. Thermodynamics" value={generateForm.chapter} onChange={e => setGenerateForm({ ...generateForm, chapter: e.target.value })} style={inputStyle} /></div>
+                      <div><label style={labelStyle}>Number of Questions</label><input required type="number" min="1" max="100" value={generateForm.count ?? ''} onChange={e => setGenerateForm({ ...generateForm, count: Number(e.target.value) })} style={inputStyle} /></div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={labelStyle}>Difficulty</label>
+                        <select value={generateForm.difficulty} onChange={e => setGenerateForm({ ...generateForm, difficulty: e.target.value })} style={{...inputStyle, background: 'var(--glass)'}}>
+                          <option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Exam Category / Level</label>
+                        <input type="text" list="exam-standards" placeholder="e.g. State Police, SSC" value={generateForm.standard} onChange={e => setGenerateForm({ ...generateForm, standard: e.target.value })} style={inputStyle} />
+                        <datalist id="exam-standards">
+                          {/* UPSC & State PSC */}
+                          <option value="UPSC Civil Services (Prelims)" />
+                          <option value="UPSC Civil Services (Mains)" />
+                          <option value="UPSC CSAT" />
+                          <option value="UPSC CAPF (AC)" />
+                          <option value="UPSC EPFO" />
+                          <option value="UPPSC (UP PCS)" />
+                          <option value="BPSC (Bihar PCS)" />
+                          <option value="MPPSC (MP PCS)" />
+                          <option value="RPSC (Rajasthan PCS)" />
+                          <option value="MPSC (Maharashtra PCS)" />
+                          
+                          {/* SSC Exams */}
+                          <option value="SSC CGL Tier 1" />
+                          <option value="SSC CGL Tier 2" />
+                          <option value="SSC CHSL (10+2)" />
+                          <option value="SSC MTS" />
+                          <option value="SSC CPO (SI)" />
+                          <option value="SSC GD Constable" />
+                          <option value="SSC Stenographer" />
+                          <option value="SSC JE (Junior Engineer)" />
+
+                          {/* Banking & Insurance */}
+                          <option value="SBI PO Prelims" />
+                          <option value="SBI PO Mains" />
+                          <option value="SBI Clerk" />
+                          <option value="IBPS PO Prelims" />
+                          <option value="IBPS PO Mains" />
+                          <option value="IBPS Clerk" />
+                          <option value="IBPS RRB (PO/Clerk)" />
+                          <option value="RBI Grade B" />
+                          <option value="RBI Assistant" />
+                          <option value="LIC AAO / ADO" />
+
+                          {/* Police & Defence */}
+                          <option value="NDA / NA" />
+                          <option value="CDS" />
+                          <option value="AFCAT" />
+                          <option value="Delhi Police Constable" />
+                          <option value="Delhi Police SI" />
+                          <option value="UP Police Constable" />
+                          <option value="UP Police SI" />
+                          <option value="Bihar Police Constable" />
+                          <option value="Bihar Police SI" />
+                          <option value="MP Police Constable" />
+                          <option value="Rajasthan Police" />
+                          <option value="Indian Coast Guard" />
+                          <option value="Airforce X & Y Group" />
+
+                          {/* Railway Exams */}
+                          <option value="RRB NTPC" />
+                          <option value="RRB Group D" />
+                          <option value="RRB ALP (Assistant Loco Pilot)" />
+                          <option value="RRB JE" />
+
+                          {/* Teaching Exams */}
+                          <option value="CTET" />
+                          <option value="UPTET" />
+                          <option value="Super TET" />
+                          <option value="KVS (PRT/TGT/PGT)" />
+                          <option value="NVS" />
+                          <option value="DSSSB" />
+                          <option value="UGC NET" />
+                          <option value="CSIR NET" />
+
+                          {/* Entrance & Others */}
+                          <option value="JEE Main" />
+                          <option value="JEE Advanced" />
+                          <option value="NEET UG" />
+                          <option value="CAT (IIM)" />
+                          <option value="GATE" />
+                          <option value="CUET UG" />
+                          <option value="CUET PG" />
+                          <option value="CLAT" />
+                          
+                          <option value="General / Basic Level" />
+                        </datalist>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>College Level (Optional)</label>
+                        <select value={generateForm.collegeLevel} onChange={e => setGenerateForm({ ...generateForm, collegeLevel: e.target.value })} style={{...inputStyle, background: 'var(--glass)'}}>
+                          <option value="">None (School/General)</option>
+                          <option value="UG (Undergraduate)">UG (Undergraduate)</option>
+                          <option value="PG (Postgraduate)">PG (Postgraduate)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Context / Previous Year Questions (PDF/TXT)</label>
+                        <input type="file" ref={contextFileRef} accept=".pdf,.txt" style={{ display: 'none' }} onChange={handleContextFileUpload} />
+                        <button type="button" onClick={() => contextFileRef.current?.click()} style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'var(--glass)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                          <Upload size={14} /> Upload PDF/TXT
+                        </button>
+                      </div>
+                      <textarea rows={5} placeholder="Upload a PDF of Previous Year Questions, or paste text here. The AI will convert them into tests!" value={generateForm.context} onChange={e => setGenerateForm({ ...generateForm, context: e.target.value })} style={{...inputStyle, resize: 'vertical'}} />
+                    </div>
+                  </>
+                )}
+
+                {generateForm.source === 'pool' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div><label style={labelStyle}>Topic (Optional filter)</label><input type="text" placeholder="e.g. Math" value={generateForm.topic} onChange={e => setGenerateForm({ ...generateForm, topic: e.target.value })} style={inputStyle} /></div>
+                    <div><label style={labelStyle}>Chapter (Optional filter)</label><input type="text" value={generateForm.chapter} onChange={e => setGenerateForm({ ...generateForm, chapter: e.target.value })} style={inputStyle} /></div>
+                  </div>
+                )}
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                   <div><label style={labelStyle}>Duration (mins)</label><input required type="number" min="1" value={generateForm.duration ?? ''} onChange={e => setGenerateForm({ ...generateForm, duration: Number(e.target.value) })} style={inputStyle} /></div>
                   <div><label style={labelStyle}>Marks / Q</label><input required type="number" min="0" step="any" value={generateForm.marks_per_question ?? ''} onChange={e => setGenerateForm({ ...generateForm, marks_per_question: Number(e.target.value) })} style={inputStyle} /></div>
@@ -937,7 +1138,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
 
                 <button type="submit" disabled={generating} style={{ background: 'var(--primary)', color: 'white', padding: '1rem', borderRadius: '12px', fontWeight: 700, marginTop: '1rem' }}>
-                  {generating ? 'Generating Test...' : 'Generate 15-Question Test'}
+                  {generating ? 'Generating Test...' : (generateForm.source === 'ai' ? `✨ AI Generate ${generateForm.count} Questions` : 'Generate 15-Question Test')}
                 </button>
               </form>
             </motion.div>
