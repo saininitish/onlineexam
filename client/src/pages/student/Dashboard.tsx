@@ -4,6 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { History, Clock, FileText, Trophy, X, Zap, Swords, Settings2, RefreshCw, Database, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 const Dashboard: React.FC = () => {
   const [tests, setTests] = useState<any[]>([]);
@@ -116,14 +120,30 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setBattleConfig({ ...battleConfig, context: event.target?.result as string });
-    };
-    reader.readAsText(file);
+
+    try {
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          fullText += pageText + '\n';
+        }
+        setBattleConfig({ ...battleConfig, context: fullText });
+      } else {
+        const text = await file.text();
+        setBattleConfig({ ...battleConfig, context: text });
+      }
+    } catch (err) {
+      alert('Failed to read file.');
+      console.error(err);
+    }
   };
 
   const getTestAttemptInfo = (testId: string) => {
@@ -413,12 +433,12 @@ const Dashboard: React.FC = () => {
 
                 <div>
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>
-                    Upload Syllabus (CSV) - <span style={{ color: 'var(--primary)' }}>Optional</span>
+                    Upload Syllabus / PYQ (PDF/CSV/TXT) - <span style={{ color: 'var(--primary)' }}>Optional</span>
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input 
                       type="file" 
-                      accept=".csv" 
+                      accept=".csv,.pdf,.txt" 
                       onChange={handleFileUpload}
                       style={{ 
                         padding: '0.8rem', 
@@ -433,7 +453,7 @@ const Dashboard: React.FC = () => {
                     />
                     {battleConfig.context && (
                       <p style={{ fontSize: '0.75rem', color: 'var(--success)', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Zap size={14} /> Syllabus context uploaded successfully!
+                        <Zap size={14} /> PYQ / Syllabus context uploaded successfully!
                       </p>
                     )}
                   </div>
