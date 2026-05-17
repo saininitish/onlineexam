@@ -1,7 +1,7 @@
 import Groq from "groq-sdk";
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config(); // Load environment variables including GROQ_API_KEY
 
 let _groq: Groq | null = null;
 
@@ -73,8 +73,11 @@ async function generateAIQuestionsBatch(
     console.log(`[AI] Generating ${count} questions for ${subject} -> ${topic} (${difficulty})`);
     
     let groundingContext = '';
+    let subjectStrictness = `0. ABSOLUTE SUBJECT STRICTNESS: Every single question must be strictly and exclusively about the Subject: "${subject}" and Topic: "${topic}". Do NOT generate questions about general knowledge or any other subject.`;
+
     if (context && context.trim().length > 10) {
-      groundingContext = `\n\nGROUNDING CONTEXT (Only generate questions based on this material):\n${context}\n\n`;
+      groundingContext = `\n\nGROUNDING CONTEXT (CRITICAL REQUIREMENT: You MUST generate questions strictly and exclusively from the facts, concepts, and material provided in this context below. Do NOT use outside knowledge):\n${context}\n\n`;
+      subjectStrictness = `0. ABSOLUTE CONTEXT STRICTNESS: Every single question MUST be derived directly from the Grounding Context provided above. Do NOT generate questions from outside knowledge.`;
       console.log('[AI] Using syllabus grounding context.');
     }
 
@@ -96,11 +99,12 @@ Difficulty: ${difficulty}
 Standard/Level: ${standard}${groundingContext}
 
 QUALITY & RIGOR REQUIREMENTS:
-0. ABSOLUTE SUBJECT STRICTNESS: Every single question must be strictly and exclusively about the Subject: "${subject}" and Topic: "${topic}". Do NOT generate questions about general knowledge or any other subject.
+${subjectStrictness}
 ${difficultyGuidelines}
 4. MAXIMUM VARIETY (CRITICAL): Ensure EVERY question covers a COMPLETELY DIFFERENT sub-concept, formula, or application pattern within the topic. Do NOT repeat the same type of question. Give maximum diversity.
 5. Clarity & Precision: Phrasing must be unambiguous, academically rigorous, and grammatically perfect in both English and Hindi.
 6. Absolute Accuracy: The correct answer MUST be indisputably correct. Explanations must be a masterclass, revealing the fastest shortcut trick along with the traditional method.
+7. MATHEMATICAL & LOGICAL VERIFICATION (CRITICAL): Before finalizing the correct_answer, double check all mathematical calculations, equations, and logical deductions. Ensure that the option marked as correct_answer (a, b, c, or d) contains the exact, indisputably correct numerical value or factual statement. Do NOT put random numbers or mismatched options.
 
 STRUCTURAL REQUIREMENTS:
 1. Return EXACTLY ${count} questions.
@@ -135,8 +139,8 @@ Return ONLY the JSON object. Do not include conversational text or markdown code
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.1-8b-instant",
-      temperature: 0.85,
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.35,
       max_tokens: 3000,
       response_format: { type: "json_object" }
     });
@@ -202,8 +206,8 @@ REQUIREMENTS:
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.1-8b-instant",
-      temperature: 0.5,
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.35,
     });
 
     const result = completion.choices[0]?.message?.content || "No explanation generated.";
@@ -233,8 +237,8 @@ export const generateAIStudyPlan = async (performanceData: any) => {
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.1-8b-instant",
-      temperature: 0.6,
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.4,
       response_format: { type: "json_object" }
     });
 

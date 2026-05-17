@@ -29,15 +29,53 @@ export const createTest = async (req: AuthRequest, res: Response) => {
 export const updateTest = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, duration, marks_per_question, negative_mark } = req.body;
-    const { data, error } = await supabase
+    const { title, duration, marks_per_question, negative_mark, assigned_to } = req.body;
+    const updateData: any = { title, duration, marks_per_question, negative_mark: parseFloat(negative_mark) };
+    if (assigned_to !== undefined) {
+      updateData.assigned_to = (Array.isArray(assigned_to) && assigned_to.length === 0) ? null : (assigned_to || null);
+    }
+
+    let { data, error } = await supabase
       .from('tests')
-      .update({ title, duration, marks_per_question, negative_mark: parseFloat(negative_mark) })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
+
+    if (error && (error.code === '22P02' || error.message.includes('uuid'))) {
+      throw new AppError('Database Schema Error: Your "assigned_to" column in the "tests" table is currently of type UUID. To assign tests to multiple students, please open your Supabase Dashboard -> Table Editor -> tests -> edit "assigned_to" column and change its type from UUID to JSONB.', 400);
+    }
+
+    if (error && error.message.includes('assigned_to')) {
+      console.warn('[updateTest] assigned_to column missing, retrying without assigned_to');
+      delete updateData.assigned_to;
+      const fallback = await supabase
+        .from('tests')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      data = fallback.data;
+      error = fallback.error;
+    }
+
     if (error) throw new AppError(error.message, 500);
     res.status(200).json(data);
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+export const getStudents = async (req: AuthRequest, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, email, role')
+      .eq('role', 'student')
+      .order('name', { ascending: true });
+
+    if (error) throw new AppError(error.message, 500);
+    res.status(200).json(data || []);
   } catch (error) {
     handleError(error, res);
   }

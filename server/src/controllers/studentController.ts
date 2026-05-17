@@ -7,10 +7,22 @@ const normAnswer = (v: string | null | undefined) =>
 
 export const getAvailableTests = async (req: AuthRequest, res: Response) => {
   try {
-    const { data, error } = await supabase
+    const userId = req.user?.id;
+    let { data, error } = await supabase
       .from('tests')
-      .select('id, title, duration, marks_per_question, negative_mark, created_by, users(name)')
+      .select('id, title, duration, marks_per_question, negative_mark, created_by, assigned_to, users(name)')
+      .or(`assigned_to.is.null,assigned_to.cs.["${userId}"]`)
       .order('created_at', { ascending: false });
+
+    if (error && (error.message.includes('assigned_to') || error.message.includes('uuid') || error.code === '42883' || error.message.includes('operator does not exist'))) {
+      console.warn('[getAvailableTests] assigned_to column issue or missing, falling back to standard select');
+      const fallback = await supabase
+        .from('tests')
+        .select('id, title, duration, marks_per_question, negative_mark, created_by, users(name)')
+        .order('created_at', { ascending: false });
+      data = fallback.data;
+      error = fallback.error;
+    }
 
     if (error) throw error;
     res.status(200).json(data);
@@ -55,11 +67,21 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
 
-    const [testsResult, attemptsResult, userResult] = await Promise.all([
-      supabase
+    let testsResult = await supabase
+      .from('tests')
+      .select('id, title, duration, marks_per_question, negative_mark, assigned_to')
+      .or(`assigned_to.is.null,assigned_to.cs.["${userId}"]`)
+      .order('created_at', { ascending: false });
+
+    if (testsResult.error && (testsResult.error.message.includes('assigned_to') || testsResult.error.message.includes('uuid') || testsResult.error.code === '42883' || testsResult.error.message.includes('operator does not exist'))) {
+      console.warn('[getStudentDashboard] assigned_to column issue or missing, falling back to standard select');
+      testsResult = await supabase
         .from('tests')
         .select('id, title, duration, marks_per_question, negative_mark')
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: false });
+    }
+
+    const [attemptsResult, userResult] = await Promise.all([
       supabase
         .from('attempts')
         .select('id, user_id, test_id, score, time_taken, submitted_at, tests(title, duration, marks_per_question, negative_mark)')

@@ -155,12 +155,13 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [tests, setTests] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'tests' | 'results' | 'monitor'>('tests');
 
 
   // Create/Edit Test Modal
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
-  const [testForm, setTestForm] = useState({ id: '', title: '', duration: 30, marks_per_question: 1, negative_mark: 0 });
+  const [testForm, setTestForm] = useState<{ id: string; title: string; duration: number; marks_per_question: number; negative_mark: number; assigned_to: string[] }>({ id: '', title: '', duration: 30, marks_per_question: 1, negative_mark: 0, assigned_to: [] });
   const [testLoading, setTestLoading] = useState(false);
 
   // Manage Questions Panel
@@ -170,7 +171,7 @@ const AdminDashboard: React.FC = () => {
 
   // Auto Generate Test Modal
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
-  const [generateForm, setGenerateForm] = useState({ title: 'Generated Test', duration: 30, marks_per_question: 1, negative_mark: 0, topic: '', chapter: '', source: 'ai', subject: 'General', context: '', count: 10, difficulty: 'Medium', standard: '', collegeLevel: '' });
+  const [generateForm, setGenerateForm] = useState({ title: 'Generated Test', duration: 30, marks_per_question: 1, negative_mark: 0, topic: '', chapter: '', source: 'ai', subject: 'General', context: '', count: 10, difficulty: 'Medium', standard: '', collegeLevel: '', assigned_to: [] as string[] });
   const [generating, setGenerating] = useState(false);
   const contextFileRef = useRef<HTMLInputElement>(null);
 
@@ -227,6 +228,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     fetchTests();
     fetchResults();
+    fetchStudents();
   }, []);
 
   const fetchTests = async () => {
@@ -244,6 +246,15 @@ const AdminDashboard: React.FC = () => {
       setResults(data);
     } catch (err) {
       console.error('Failed to fetch results', err);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const { data } = await api.get('/admin/students');
+      setStudents(data);
+    } catch (err) {
+      console.error('Failed to fetch students', err);
     }
   };
 
@@ -273,7 +284,8 @@ const AdminDashboard: React.FC = () => {
               title: testForm.title,
               duration: Number(testForm.duration) || 0,
               marks_per_question: Number(testForm.marks_per_question) || 0,
-              negative_mark: Number(testForm.negative_mark) || 0
+              negative_mark: Number(testForm.negative_mark) || 0,
+              assigned_to: testForm.assigned_to.length > 0 ? testForm.assigned_to : null
             }
             : prev
         );
@@ -286,9 +298,10 @@ const AdminDashboard: React.FC = () => {
       }
       fetchTests();
       setIsTestModalOpen(false);
-      setTestForm({ id: '', title: '', duration: 30, marks_per_question: 1, negative_mark: 0 });
-    } catch (err) {
+      setTestForm({ id: '', title: '', duration: 30, marks_per_question: 1, negative_mark: 0, assigned_to: [] });
+    } catch (err: any) {
       console.error('Failed to save test', err);
+      alert(err?.response?.data?.message || err?.message || 'Failed to save test');
     } finally {
       setTestLoading(false);
     }
@@ -330,12 +343,13 @@ const AdminDashboard: React.FC = () => {
           title: generateForm.title,
           duration: generateForm.duration,
           marks_per_question: generateForm.marks_per_question,
-          negative_mark: generateForm.negative_mark
+          negative_mark: generateForm.negative_mark,
+          assigned_to: generateForm.assigned_to.length > 0 ? generateForm.assigned_to : null
         });
 
         const { data: generatedQuestions } = await api.post('/admin/ai/generate-questions', {
-          subject: generateForm.subject,
-          topic: `${generateForm.chapter ? generateForm.chapter + ' - ' : ''}${generateForm.topic}`,
+          subject: generateForm.context ? 'From Uploaded PDF Context' : generateForm.subject,
+          topic: generateForm.context ? 'Questions from uploaded PDF material' : `${generateForm.chapter ? generateForm.chapter + ' - ' : ''}${generateForm.topic}`,
           difficulty: generateForm.difficulty,
           count: generateForm.count,
           context: generateForm.context,
@@ -345,7 +359,11 @@ const AdminDashboard: React.FC = () => {
         const questionsWithTestId = generatedQuestions.map((q: any) => ({
           ...q,
           test_id: newTest.id,
-          question: serializeQuestion(q.question, generateForm.topic, generateForm.difficulty, generateForm.chapter, q.question_hi)
+          question: serializeQuestion(q.question, generateForm.topic, generateForm.difficulty, generateForm.chapter, q.question_hi),
+          option_a: q.option_a_hi ? `${q.option_a} ||| ${q.option_a_hi}` : q.option_a,
+          option_b: q.option_b_hi ? `${q.option_b} ||| ${q.option_b_hi}` : q.option_b,
+          option_c: q.option_c_hi ? `${q.option_c} ||| ${q.option_c_hi}` : q.option_c,
+          option_d: q.option_d_hi ? `${q.option_d} ||| ${q.option_d_hi}` : q.option_d
         }));
 
         await api.post('/admin/questions/bulk', {
@@ -394,7 +412,8 @@ const AdminDashboard: React.FC = () => {
           title: generateForm.title,
           duration: generateForm.duration,
           marks_per_question: generateForm.marks_per_question,
-          negative_mark: generateForm.negative_mark
+          negative_mark: generateForm.negative_mark,
+          assigned_to: generateForm.assigned_to.length > 0 ? generateForm.assigned_to : null
         });
 
         const payload = selected.map(q => ({
@@ -435,7 +454,11 @@ const AdminDashboard: React.FC = () => {
       const questionsWithTestId = data.map((q: any) => ({
         ...q,
         test_id: activeTestId,
-        question: serializeQuestion(q.question, q.topic, q.difficulty, '')
+        question: serializeQuestion(q.question, topic, difficulty, '', q.question_hi),
+        option_a: q.option_a_hi ? `${q.option_a} ||| ${q.option_a_hi}` : q.option_a,
+        option_b: q.option_b_hi ? `${q.option_b} ||| ${q.option_b_hi}` : q.option_b,
+        option_c: q.option_c_hi ? `${q.option_c} ||| ${q.option_c_hi}` : q.option_c,
+        option_d: q.option_d_hi ? `${q.option_d} ||| ${q.option_d_hi}` : q.option_d
       }));
       await api.post('/admin/questions/bulk', { test_id: activeTestId, questions: questionsWithTestId });
       fetchQuestions(activeTestId);
@@ -512,12 +535,19 @@ const AdminDashboard: React.FC = () => {
   };
 
   const openEditTest = (test: any) => {
+    let assignedArr: string[] = [];
+    if (Array.isArray(test.assigned_to)) {
+      assignedArr = test.assigned_to;
+    } else if (typeof test.assigned_to === 'string') {
+      try { assignedArr = JSON.parse(test.assigned_to); } catch { assignedArr = [test.assigned_to]; }
+    }
     setTestForm({
       id: test.id,
       title: test.title,
       duration: Number(test.duration) || 0,
       marks_per_question: Number(test.marks_per_question) || 0,
-      negative_mark: Number(test.negative_mark) || 0
+      negative_mark: Number(test.negative_mark) || 0,
+      assigned_to: assignedArr
     });
     setSelectedTest(test);
     fetchQuestions(test.id);
@@ -564,7 +594,7 @@ const AdminDashboard: React.FC = () => {
           </button>
           <button
             onClick={() => {
-              setTestForm({ id: '', title: '', duration: 30, marks_per_question: 1, negative_mark: 0 });
+              setTestForm({ id: '', title: '', duration: 30, marks_per_question: 1, negative_mark: 0, assigned_to: [] });
               setSelectedTest(null);
               setIsTestModalOpen(true);
             }}
@@ -633,7 +663,25 @@ const AdminDashboard: React.FC = () => {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
-                        <h3 style={{ marginBottom: '0.5rem', fontSize: '1.15rem' }}>{test.title}</h3>
+                        <h3 style={{ marginBottom: '0.5rem', fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {test.title}
+                          {(() => {
+                            let arr: string[] = [];
+                            if (Array.isArray(test.assigned_to)) arr = test.assigned_to;
+                            else if (typeof test.assigned_to === 'string') {
+                              try { arr = JSON.parse(test.assigned_to); } catch { arr = [test.assigned_to]; }
+                            }
+                            if (arr.length === 0) {
+                              return <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--success)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.3)' }}>🌐 Public</span>;
+                            }
+                            const names = arr.map(id => students.find(s => s.id === id)?.name || 'Student').join(', ');
+                            return (
+                              <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', border: '1px solid rgba(239, 68, 68, 0.3)' }} title={names}>
+                                👤 Assigned ({arr.length} student{arr.length > 1 ? 's' : ''})
+                              </span>
+                            );
+                          })()}
+                        </h3>
                         <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                           <span>⏱ {test.duration}m</span>
                           <span>✅ +{test.marks_per_question}</span>
@@ -858,6 +906,37 @@ const AdminDashboard: React.FC = () => {
                   <label style={labelStyle}>Test Title</label>
                   <input type="text" required value={testForm.title} onChange={e => setTestForm({ ...testForm, title: e.target.value })} style={inputStyle} />
                 </div>
+                <div>
+                  <label style={labelStyle}>Assign To Students (Select Multiple - Optional)</label>
+                  <div style={{ maxHeight: '160px', overflowY: 'auto', background: 'var(--glass)', border: '1px solid var(--glass-border)', borderRadius: '10px', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.35rem 0.6rem', borderRadius: '8px', background: testForm.assigned_to.length === 0 ? 'rgba(99,102,241,0.25)' : 'transparent', border: testForm.assigned_to.length === 0 ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={testForm.assigned_to.length === 0} 
+                        onChange={() => setTestForm({ ...testForm, assigned_to: [] })} 
+                      />
+                      <span style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem' }}>🌐 All Students (Public)</span>
+                    </label>
+                    {students.map(s => {
+                      const isChecked = testForm.assigned_to.includes(s.id);
+                      return (
+                        <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.35rem 0.6rem', borderRadius: '8px', background: isChecked ? 'rgba(16,185,129,0.25)' : 'transparent', border: isChecked ? '1px solid rgba(16,185,129,0.4)' : '1px solid transparent' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked} 
+                            onChange={() => {
+                              const next = isChecked 
+                                ? testForm.assigned_to.filter(id => id !== s.id)
+                                : [...testForm.assigned_to, s.id];
+                              setTestForm({ ...testForm, assigned_to: next });
+                            }} 
+                          />
+                          <span style={{ color: 'white', fontSize: '0.9rem' }}>👤 {s.name} ({s.email})</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
                     <label style={labelStyle}>Duration (mins)</label>
@@ -1002,15 +1081,46 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 
                 <div><label style={labelStyle}>Test Title</label><input required type="text" value={generateForm.title} onChange={e => setGenerateForm({ ...generateForm, title: e.target.value })} style={inputStyle} /></div>
+                <div>
+                  <label style={labelStyle}>Assign To Students (Select Multiple - Optional)</label>
+                  <div style={{ maxHeight: '160px', overflowY: 'auto', background: 'var(--glass)', border: '1px solid var(--glass-border)', borderRadius: '10px', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.35rem 0.6rem', borderRadius: '8px', background: generateForm.assigned_to.length === 0 ? 'rgba(99,102,241,0.25)' : 'transparent', border: generateForm.assigned_to.length === 0 ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={generateForm.assigned_to.length === 0} 
+                        onChange={() => setGenerateForm({ ...generateForm, assigned_to: [] })} 
+                      />
+                      <span style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem' }}>🌐 All Students (Public)</span>
+                    </label>
+                    {students.map(s => {
+                      const isChecked = generateForm.assigned_to.includes(s.id);
+                      return (
+                        <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.35rem 0.6rem', borderRadius: '8px', background: isChecked ? 'rgba(16,185,129,0.25)' : 'transparent', border: isChecked ? '1px solid rgba(16,185,129,0.4)' : '1px solid transparent' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked} 
+                            onChange={() => {
+                              const next = isChecked 
+                                ? generateForm.assigned_to.filter(id => id !== s.id)
+                                : [...generateForm.assigned_to, s.id];
+                              setGenerateForm({ ...generateForm, assigned_to: next });
+                            }} 
+                          />
+                          <span style={{ color: 'white', fontSize: '0.9rem' }}>👤 {s.name} ({s.email})</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
                 
                 {generateForm.source === 'ai' && (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div><label style={labelStyle}>Subject</label><input type="text" required placeholder="e.g. Science" value={generateForm.subject} onChange={e => setGenerateForm({ ...generateForm, subject: e.target.value })} style={inputStyle} /></div>
-                      <div><label style={labelStyle}>Topic</label><input type="text" required placeholder="e.g. Physics" value={generateForm.topic} onChange={e => setGenerateForm({ ...generateForm, topic: e.target.value })} style={inputStyle} /></div>
+                      <div><label style={labelStyle}>Subject</label><input type="text" required={!generateForm.context} disabled={!!generateForm.context} placeholder="e.g. Science" value={generateForm.context ? 'From Uploaded PDF Context' : generateForm.subject} onChange={e => setGenerateForm({ ...generateForm, subject: e.target.value })} style={inputStyle} /></div>
+                      <div><label style={labelStyle}>Topic</label><input type="text" required={!generateForm.context} disabled={!!generateForm.context} placeholder="e.g. Physics" value={generateForm.context ? 'PDF Material' : generateForm.topic} onChange={e => setGenerateForm({ ...generateForm, topic: e.target.value })} style={inputStyle} /></div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div><label style={labelStyle}>Chapter (Optional)</label><input type="text" placeholder="e.g. Thermodynamics" value={generateForm.chapter} onChange={e => setGenerateForm({ ...generateForm, chapter: e.target.value })} style={inputStyle} /></div>
+                      <div><label style={labelStyle}>Chapter (Optional)</label><input type="text" disabled={!!generateForm.context} placeholder="e.g. Thermodynamics" value={generateForm.context ? 'PDF Extraction' : generateForm.chapter} onChange={e => setGenerateForm({ ...generateForm, chapter: e.target.value })} style={inputStyle} /></div>
                       <div><label style={labelStyle}>Number of Questions</label><input required type="number" min="1" max="100" value={generateForm.count ?? ''} onChange={e => setGenerateForm({ ...generateForm, count: Number(e.target.value) })} style={inputStyle} /></div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
@@ -1112,12 +1222,19 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0.5rem 0' }}>
                         <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Context / Previous Year Questions (PDF/TXT)</label>
                         <input type="file" ref={contextFileRef} accept=".pdf,.txt" style={{ display: 'none' }} onChange={handleContextFileUpload} />
-                        <button type="button" onClick={() => contextFileRef.current?.click()} style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'var(--glass)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
-                          <Upload size={14} /> Upload PDF/TXT
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          {!!generateForm.context && (
+                            <button type="button" onClick={() => setGenerateForm({ ...generateForm, context: '', subject: 'General', topic: '', chapter: '' })} style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: 'var(--danger)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                              🗑️ Clear PDF
+                            </button>
+                          )}
+                          <button type="button" onClick={() => contextFileRef.current?.click()} style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', background: 'var(--glass)', border: '1px solid var(--glass-border)', color: 'white', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                            <Upload size={14} /> Upload PDF/TXT
+                          </button>
+                        </div>
                       </div>
                       <textarea rows={5} placeholder="Upload a PDF of Previous Year Questions, or paste text here. The AI will convert them into tests!" value={generateForm.context} onChange={e => setGenerateForm({ ...generateForm, context: e.target.value })} style={{...inputStyle, resize: 'vertical'}} />
                     </div>
