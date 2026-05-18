@@ -255,3 +255,183 @@ export const generateAIStudyPlan = async (performanceData: any) => {
     };
   }
 };
+
+export async function generateAIStudyMaterial(topic: string, content: string) {
+  try {
+    const groq = getGroqClient();
+    console.log(`[AI] Generating Smart Notes & Flashcards for Topic: ${topic}`);
+
+    const prompt = `You are an expert AI study assistant and master academic synthesizer.
+Your task is to convert the following study material into highly digestible, engaging, and exam-ready revision assets.
+
+Topic Name: ${topic}
+Chapter Text / PDF Content: ${content || 'Explain the core principles, formulas, and concepts of this topic in detail.'}
+
+STRICT PEDAGOGICAL RULES:
+1. Simplicity First: Explain concepts as if explaining to a curious high school student. Avoid unnecessary academic jargon; use everyday analogies.
+2. Bullet-Point Structure: Keep paragraphs minimal. Use structured bullet points.
+3. Memory Tricks (Mnemonics): Actively generate clever acronyms, rhymes, or visual memory hooks for complex lists or rules.
+4. Flashcard Q&A Format: Format flashcards strictly as Question-Answer pairs with explicit difficulty tags (Easy, Medium, Hard).
+5. Rapid Quiz: Conclude with exactly 5 rapid revision questions.
+
+REQUIRED JSON OUTPUT FORMAT:
+You MUST respond with ONLY a valid JSON object matching this exact structure:
+{
+  "summary_notes": [
+    "High-level bullet point 1",
+    "High-level bullet point 2"
+  ],
+  "key_concepts": [
+    {
+      "title": "Concept Title",
+      "explanation": "Clear explanation with bullet points",
+      "mnemonic": "🚀 Memory Trick / Mnemonic (if applicable)"
+    }
+  ],
+  "formula_sheet": [
+    {
+      "name": "Formula Name",
+      "formula": "Mathematical equation",
+      "variables": "Variables and SI units",
+      "notes": "Key conditions or notes"
+    }
+  ],
+  "flashcards": [
+    {
+      "question": "Clear question text",
+      "answer": "Concise answer text",
+      "difficulty": "Easy" // Must be Easy, Medium, or Hard
+    }
+  ],
+  "rapid_quiz": [
+    {
+      "question": "Quick-fire question text",
+      "answer": "Exact correct answer"
+    }
+  ],
+  "student_mistakes": [
+    {
+      "mistake": "Common exam trap or calculation error",
+      "correction": "How to avoid this trap"
+    }
+  ]
+}
+
+Return ONLY the JSON object. Do not include markdown code blocks around it. Ensure valid JSON syntax.`;
+
+    const completion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.35,
+      max_tokens: 4000,
+      response_format: { type: "json_object" }
+    });
+
+    const text = completion.choices[0]?.message?.content || '{}';
+    console.log(`[AI] Study material generated (${text.length} chars)`);
+
+    try {
+      const data = JSON.parse(text);
+      return data;
+    } catch (parseErr) {
+      console.error('[AI] Failed to parse study material JSON. Cleaning text...');
+      const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(cleaned);
+    }
+  } catch (error: any) {
+    console.error('Groq Study Material generation failed:', error);
+    throw new Error('Failed to generate study material with AI');
+  }
+}
+
+export async function generateBattleRoastAndAnalysis(performanceData: any) {
+  try {
+    const groq = getGroqClient();
+    console.log(`[AI] Generating Adaptive Difficulty & Meme Roast for Player: ${performanceData?.playerName || 'Student'}`);
+
+    const prompt = `You are the AI Battle Host, Adaptive Difficulty Controller, and Master Meme Coach for a competitive quiz battle app called "Exam Prep Battle".
+Your task is to analyze a player's recent battle performance, determine their optimal next difficulty level, identify weak areas, and deliver a hilarious, student-friendly roast followed by high-energy encouragement.
+
+INPUT PERFORMANCE DATA:
+Player Name: ${performanceData?.playerName || 'Champion'}
+Battle Topic: ${performanceData?.topic || 'General Aptitude'}
+Accuracy: ${performanceData?.accuracy || 50}% (${performanceData?.correctCount || 5}/${performanceData?.totalCount || 10} correct)
+Average Response Time: ${performanceData?.avgResponseTime || 35} seconds / question
+Current Difficulty: ${performanceData?.currentDifficulty || 'Medium'}
+Weak Sub-topics Identified: ${JSON.stringify(performanceData?.weakTopics || ['Core concepts, formula application'])}
+
+ADAPTIVE DIFFICULTY RULES:
+- Difficulty Tiers: Easy -> Medium -> Hard -> Expert.
+- Promotion Rule: If Accuracy >= 80% AND Average Response Time < 30s, promote to next tier.
+- Demotion / Safety Rule: If Accuracy < 50% or player struggled heavily, reduce difficulty slightly to maintain balanced gameplay and prevent frustration.
+- Maintenance Rule: Otherwise, maintain current level.
+
+ROAST & HUMOR RULES (CRITICAL):
+1. Meme-Style Tone: Use popular Gen-Z / Student Hinglish meme references (e.g., "Moye Moye", "Baingan", "Jalwa hai hamara", "Itna fast wrong answer kaise diya 😭", "Bhai calculator bhi confuse ho gaya 😭", "Lagta hai quadratic equations ne revenge le liya 💀").
+2. Strictly Student-Friendly: Humor must be lighthearted and witty. ABSOLUTELY NO offensive language, personal insults, or bullying.
+3. Encouraging Pivot: Always follow a funny roast with a powerful, uplifting motivational line.
+
+REQUIRED JSON OUTPUT FORMAT:
+You MUST respond with ONLY a valid JSON object matching this exact structure:
+{
+  "new_difficulty": "Medium", // Must be Easy, Medium, Hard, or Expert
+  "difficulty_justification": "Clear 1-sentence justification for this level adjustment.",
+  "analysis": {
+    "accuracy_text": "40% (4/10 correct)",
+    "speed_text": "45s / question (Pacing was sluggish)",
+    "summary": "Brief 1-line overall summary"
+  },
+  "weak_topics": [
+    {
+      "topic": "Sub-concept name",
+      "mistake": "Specific mistake or conceptual gap identified"
+    }
+  ],
+  "suggested_practice": [
+    "Actionable tip or 10-second shortcut trick"
+  ],
+  "funny_roast": "Hilarious meme-style Hinglish roast 😭💀",
+  "motivational_line": "High-energy uplifting closing statement 🚀🏆"
+}
+
+Return ONLY the JSON object. Do not include markdown code blocks around it. Ensure valid JSON syntax.`;
+
+    const completion = await groq.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.4,
+      max_tokens: 3000,
+      response_format: { type: "json_object" }
+    });
+
+    const text = completion.choices[0]?.message?.content || '{}';
+    console.log(`[AI] Roast & Analysis generated (${text.length} chars)`);
+
+    try {
+      const data = JSON.parse(text);
+      return data;
+    } catch (parseErr) {
+      console.error('[AI] Failed to parse roast JSON. Cleaning text...');
+      const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      return JSON.parse(cleaned);
+    }
+  } catch (error: any) {
+    console.error('Groq Roast generation failed:', error);
+    // Fallback object so the app never crashes
+    return {
+      new_difficulty: performanceData?.currentDifficulty || "Medium",
+      difficulty_justification: "Maintaining current difficulty to help you stabilize your performance.",
+      analysis: {
+        accuracy_text: `${performanceData?.accuracy || 50}%`,
+        speed_text: `${performanceData?.avgResponseTime || 30}s / question`,
+        summary: "Keep practicing to improve your speed and accuracy."
+      },
+      weak_topics: [{ topic: performanceData?.topic || "General Concepts", mistake: "Needs more practice in time management." }],
+      suggested_practice: ["Revise basic formulas before the next battle."],
+      funny_roast: "Bhai lagta hai aaj badam khana bhool gaye the 😭 Koi na, agli battle me phod dena! 💀",
+      motivational_line: "Champions never quit! Revise karo aur arena me dhoom macha do! 🚀🏆"
+    };
+  }
+}
+
+

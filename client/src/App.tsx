@@ -14,6 +14,8 @@ const Register = lazy(() => import('./pages/Register'));
 const AdminRegister = lazy(() => import('./pages/admin/Register'));
 const StudentDashboard = lazy(() => import('./pages/student/Dashboard'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const ManageTests = lazy(() => import('./pages/admin/ManageTests'));
+const ManageStudents = lazy(() => import('./pages/admin/ManageStudents'));
 const Analytics = lazy(() => import('./pages/AnalyticsShared'));
 const TestEngine = lazy(() => import('./pages/TestEngine'));
 const ResultPage = lazy(() => import('./pages/ResultPage'));
@@ -21,6 +23,8 @@ const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const BattleArena = lazy(() => import('./pages/student/BattleArena'));
 const BattleAnalysis = lazy(() => import('./pages/student/BattleAnalysis'));
 const SyllabusManager = lazy(() => import('./pages/student/SyllabusManager'));
+const StoreRewards = lazy(() => import('./pages/student/StoreRewards'));
+const StudyAssistant = lazy(() => import('./pages/student/StudyAssistant'));
 
 // Public Layout (Navbar + Content)
 const PublicLayout = () => (
@@ -67,8 +71,8 @@ const App: React.FC = () => {
           {/* Admin Routes - Bilkul Alag! */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
-            <Route path="tests" element={<div>Manage Tests Page (Coming Soon)</div>} />
-            <Route path="students" element={<div>Manage Students Page (Coming Soon)</div>} />
+            <Route path="tests" element={<ManageTests />} />
+            <Route path="students" element={<ManageStudents />} />
             {/* Shared analytics but inside admin layout */}
             <Route path="analytics" element={<Analytics />} />
           </Route>
@@ -98,6 +102,8 @@ const App: React.FC = () => {
              <Route path="/result/:id" element={<ResultPage />} />
              <Route path="/leaderboard/:testId" element={<Leaderboard />} />
              <Route path="/analytics" element={<Analytics />} />
+             <Route path="/store-rewards" element={<StoreRewards />} />
+             <Route path="/study-assistant" element={<StudyAssistant />} />
           </Route>
 
           {/* Fallback */}

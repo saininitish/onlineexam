@@ -8,7 +8,9 @@ import {
   LogOut, 
   User, 
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  ShoppingBag,
+  Bot
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
@@ -25,6 +27,8 @@ const StudentLayout: React.FC = () => {
     { icon: BookOpen, label: 'My Tests', path: '/dashboard' },
     { icon: BarChart3, label: 'My Analytics', path: '/analytics' },
     { icon: Trophy, label: 'Leaderboard', path: '/leaderboard/all' },
+    { icon: Bot, label: 'AI Study Assistant', path: '/study-assistant' },
+    { icon: ShoppingBag, label: 'Store & Rewards', path: '/store-rewards' },
   ];
 
   return (

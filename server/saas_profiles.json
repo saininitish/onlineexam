@@ -1,0 +1,15 @@
+{
+  "dbaf6525-dde2-4226-b42f-e7004b49e75b": {
+    "userId": "dbaf6525-dde2-4226-b42f-e7004b49e75b",
+    "coins": 500,
+    "gems": 20,
+    "plan": "Challenger",
+    "battle_pass": "Free",
+    "streak": 11,
+    "lastClaimDate": null,
+    "referral_code": "DPQL05",
+    "referred_by": null,
+    "mock_purchases": [],
+    "tournament_entries": []
+  }
+}

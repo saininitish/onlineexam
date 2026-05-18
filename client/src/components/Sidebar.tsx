@@ -8,7 +8,9 @@ import {
   LogOut,
   ChevronRight,
   User,
-  ShieldCheck
+  ShieldCheck,
+  Bot,
+  ShoppingBag
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 // import { motion } from 'framer-motion';
@@ -28,6 +30,8 @@ const Sidebar = () => {
       { icon: BookOpen, label: 'My Tests', path: '/dashboard' },
       { icon: BarChart3, label: 'My Analytics', path: '/analytics' },
       { icon: Trophy, label: 'Leaderboard', path: '/leaderboard/all' },
+      { icon: Bot, label: 'AI Study Assistant', path: '/study-assistant' },
+      { icon: ShoppingBag, label: 'Store & Rewards', path: '/store-rewards' },
     ];
   }, [user]);
 
